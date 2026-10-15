@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from . import forms
-from .models import CursosLeccion, CursosModulo, Leccion, Modulo, Usuario
+from .models import Leccion, Modulo, Usuario
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
 
@@ -49,7 +49,7 @@ class CursosModuloDeleteView(DeleteView):
 
 
 
-class LeccionListView(ListView):
+class CursosLeccionListView(ListView):
     model = Leccion
     template_name = 'APP/cursos_leccion_list.html'
     context_object_name = 'lecciones'
@@ -68,6 +68,6 @@ class CursosLeccionUpdateView(UpdateView):
 
 class CursosLeccionDeleteView(DeleteView):
     model = Leccion
-    template_name = 'cursos_leccion_confirm_delete.html'
+    template_name = 'APP/cursos_leccion_confirm_delete.html'
     success_url = reverse_lazy('cursos_leccion_list')
     

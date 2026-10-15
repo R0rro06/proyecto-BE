@@ -43,26 +43,6 @@ class Estado(models.Model):
         db_table = 'estado'
 
 
-class Leccion(models.Model):
-    modulo = models.ForeignKey('Modulo', models.DO_NOTHING)
-    titulo = models.CharField(max_length=150, blank=True, null=True)
-    descripcion = models.TextField(blank=True, null=True)
-    orden = models.IntegerField(blank=True, null=True)
-
-    class Meta:
-        managed = True
-        db_table = 'leccion'
-
-
-class Modulo(models.Model):
-    pregunta = models.CharField(max_length=500, blank=True, null=True)
-    es_verdad = models.IntegerField(blank=True, null=True)
-    explicacion = models.TextField(blank=True, null=True)
-
-    class Meta:
-        managed = True
-        db_table = 'modulo'
-
 
 class Perfil(models.Model):
     usuario = models.ForeignKey('Usuario', models.DO_NOTHING)

@@ -1,5 +1,5 @@
 from django import forms
-from .models import CursosLeccion, CursosModulo, Estado, Leccion, Modulo, Perfil, Progreso, Rol, Usuario
+from .models import Leccion, Modulo, Estado, Perfil, Progreso, Rol, Usuario
 
 class LeccionForm(forms.ModelForm):
     class Meta:
@@ -10,7 +10,7 @@ class LeccionForm(forms.ModelForm):
 class ModuloForm(forms.ModelForm):
     class Meta:
         model = Modulo
-        fields = ('pregunta', 'es_verdad', 'explicacion')
+        fields = '__all__'
 
 
 class EstadoForm(forms.ModelForm):

@@ -9,7 +9,7 @@
     <h1>Módulos</h1>
     <ul>
         {% for modulo in modulos %}
-            <li>{{ modulo.pregunta }}</li>
+            <li>{{ modulo.titulo}}</li>
         {% endfor %}
     </ul>
     <table>
@@ -22,7 +22,7 @@
         <tbody>
             {% for modulo in modulos %}
                 <tr>
-                    <td>{{ modulo.pregunta }}</td>
+                    <td>{{ modulo.titulo}}</td>
                 </tr>
             {% endfor %}
         </tbody>
