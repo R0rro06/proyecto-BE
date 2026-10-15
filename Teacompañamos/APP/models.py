@@ -9,20 +9,20 @@
 # Feel free to rename the models, but don't rename db_table values or field names.
 from django.db import models
 
-class CursosLeccion(models.Model):
+class Leccion(models.Model):
     id = models.BigAutoField(primary_key=True)
     pregunta = models.CharField(max_length=300)
     es_verdad = models.IntegerField()
     explicacion = models.TextField()
     completada = models.IntegerField(default=0)
-    modulo = models.ForeignKey('CursosModulo', models.DO_NOTHING)
+    modulo = models.ForeignKey('Modulo', models.DO_NOTHING)
 
     class Meta:
         managed = True
-        db_table = 'cursos_leccion'
+        db_table = 'leccion'
 
 
-class CursosModulo(models.Model):
+class Modulo(models.Model):
     id = models.BigAutoField(primary_key=True)
     titulo = models.CharField(max_length=200)
     descripcion = models.TextField()
@@ -32,7 +32,7 @@ class CursosModulo(models.Model):
 
     class Meta:
         managed = True
-        db_table = 'cursos_modulo'
+        db_table = 'modulo'
 
 
 class Estado(models.Model):
