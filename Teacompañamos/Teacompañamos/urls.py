@@ -20,6 +20,9 @@ from django.urls import path
 from APP import views
 
 urlpatterns = [
+    path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
+    path('aprender/modulos/<int:pk>/', views.AprenderModuloView.as_view(), name='aprender_modulo'),
+    path('aprender/lecciones/<int:pk>/', views.ResponderLeccionView.as_view(), name='responder_leccion'),
     path('panel_administracion/', views.PanelAdminView.as_view(), name='panel_administracion'),
     path('modulos/', views.CursosModuloListView.as_view(), name='cursos_modulo_list'),
     path('modulos/create/', views.CursosModuloCreateView.as_view(), name='cursos_modulo_form'),

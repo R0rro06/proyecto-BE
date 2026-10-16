@@ -1,25 +1,33 @@
 <!DOCTYPE html>
 <html lang="es">
+{% load static %}
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Administrar lecciones</title>
+    <link rel="stylesheet" href="{% static 'APP/admin.css' %}">
 </head>
 <body>
     <header>
         <a href="{% url 'panel_administracion' %}">Volver al panel</a>
-        <h1>Administrar lecciones</h1>
-        <a href="{% url 'cursos_leccion_form' %}">Crear lección</a>
+        <strong>Teacompañamos · Lecciones</strong>
+        <a class="button button-primary" href="{% url 'cursos_leccion_form' %}">Crear lección</a>
     </header>
+
+    <main>
+        <div class="page-intro">
+            <h1>Administrar lecciones</h1>
+            <p>Gestiona preguntas, respuestas y explicaciones de cada módulo.</p>
+        </div>
 
     {% if messages %}
         {% for message in messages %}
-            <p role="status">{{ message }}</p>
+            <p class="status-message" role="status">{{ message }}</p>
         {% endfor %}
     {% endif %}
 
     {% if lecciones %}
-        <div style="overflow-x: auto;">
+        <div class="table-wrap">
             <table>
                 <thead>
                     <tr>
@@ -33,11 +41,11 @@
                     {% for leccion in lecciones %}
                         <tr>
                             <td>{{ leccion.pregunta }}</td>
-                            <td>{{ leccion.es_verdad }}</td>
+                            <td>{% if leccion.es_verdad %}Verdadero{% else %}Falso{% endif %}</td>
                             <td>{{ leccion.modulo }}</td>
                             <td>
-                                <a href="{% url 'cursos_leccion_update' leccion.pk %}">Editar</a>
-                                <a href="{% url 'cursos_leccion_delete' leccion.pk %}">Eliminar</a>
+                                <a class="button" href="{% url 'cursos_leccion_update' leccion.pk %}">Editar</a>
+                                <a class="button button-danger" href="{% url 'cursos_leccion_delete' leccion.pk %}">Eliminar</a>
                             </td>
                         </tr>
                     {% endfor %}
@@ -45,7 +53,11 @@
             </table>
         </div>
     {% else %}
-        <p>Aún no hay lecciones registradas. Puedes crear la primera.</p>
+        <div class="empty-state">
+            <p>Aún no hay lecciones registradas. Puedes crear la primera.</p>
+            <a class="button button-primary" href="{% url 'cursos_leccion_form' %}">Crear lección</a>
+        </div>
     {% endif %}
+    </main>
 </body>
 </html>

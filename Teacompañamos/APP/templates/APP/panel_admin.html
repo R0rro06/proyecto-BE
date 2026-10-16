@@ -3,28 +3,200 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel de administración</title>
+    <meta name="description" content="Administra los módulos y las lecciones de Teacompañamos.">
+    <title>Panel de administración | Teacompañamos</title>
+    <style>
+        :root {
+            color-scheme: light;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: #172b4d;
+            background: #f5f7fb;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        a {
+            color: inherit;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 1rem clamp(1rem, 5vw, 4rem);
+            background: #fff;
+            border-bottom: 1px solid #e5eaf2;
+        }
+
+        .brand {
+            color: #285c48;
+            font-size: 1.2rem;
+            font-weight: 800;
+            text-decoration: none;
+        }
+
+        .back-link {
+            color: #52627a;
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .back-link:hover,
+        .back-link:focus-visible {
+            color: #285c48;
+            text-decoration: underline;
+        }
+
+        main {
+            width: min(1000px, 100% - 2rem);
+            margin: 2.5rem auto 4rem;
+        }
+
+        .intro {
+            margin-bottom: 2rem;
+            padding: clamp(1.5rem, 5vw, 3rem);
+            color: #fff;
+            background: linear-gradient(125deg, #285c48, #378263);
+            border-radius: 1.5rem;
+        }
+
+        .intro h1 {
+            margin: 0 0 0.75rem;
+            font-size: clamp(2rem, 5vw, 3rem);
+        }
+
+        .intro p {
+            max-width: 42rem;
+            margin: 0;
+            color: #e7f5ee;
+            line-height: 1.6;
+        }
+
+        .management-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1.25rem;
+        }
+
+        .management-card {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            padding: clamp(1.25rem, 3vw, 2rem);
+            background: #fff;
+            border: 1px solid #e5eaf2;
+            border-radius: 1.25rem;
+            box-shadow: 0 8px 24px rgb(23 43 77 / 5%);
+        }
+
+        .management-card h2 {
+            margin: 0 0 0.5rem;
+            color: #285c48;
+            font-size: 1.5rem;
+        }
+
+        .management-card p {
+            margin: 0 0 1.5rem;
+            color: #52627a;
+            line-height: 1.6;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: auto;
+        }
+
+        .button {
+            display: inline-flex;
+            min-height: 2.75rem;
+            align-items: center;
+            justify-content: center;
+            padding: 0.7rem 1rem;
+            border: 1px solid #285c48;
+            border-radius: 0.75rem;
+            color: #285c48;
+            font-weight: 700;
+            text-align: center;
+            text-decoration: none;
+            transition: background-color 150ms ease, color 150ms ease, transform 150ms ease;
+        }
+
+        .button-primary {
+            color: #fff;
+            background: #285c48;
+        }
+
+        .button:hover,
+        .button:focus-visible {
+            color: #fff;
+            background: #378263;
+            border-color: #378263;
+            transform: translateY(-1px);
+        }
+
+        @media (max-width: 650px) {
+            .topbar {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .management-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .actions {
+                width: 100%;
+                flex-direction: column;
+            }
+
+            .button {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
+    <header class="topbar">
+        <a class="brand" href="{% url 'panel_administracion' %}">Teacompañamos · Administración</a>
+        <a class="back-link" href="{% url 'dashboard' %}">← Volver al dashboard</a>
+    </header>
+
     <main>
-        <h1>Panel de administración</h1>
-        <p>Desde aquí puedes gestionar los módulos y las lecciones.</p>
-
-        <section aria-labelledby="modulos-heading">
-            <h2 id="modulos-heading">Módulos</h2>
-            <p>
-                <a href="{% url 'cursos_modulo_list' %}">Ver y administrar módulos</a>
-                <a href="{% url 'cursos_modulo_form' %}">Crear módulo</a>
-            </p>
+        <section class="intro" aria-labelledby="panel-heading">
+            <h1 id="panel-heading">Panel de administración</h1>
+            <p>Gestiona el contenido de aprendizaje: crea, consulta y organiza módulos y lecciones.</p>
         </section>
 
-        <section aria-labelledby="lecciones-heading">
-            <h2 id="lecciones-heading">Lecciones</h2>
-            <p>
-                <a href="{% url 'cursos_leccion_list' %}">Ver y administrar lecciones</a>
-                <a href="{% url 'cursos_leccion_form' %}">Crear lección</a>
-            </p>
-        </section>
+        <div class="management-grid">
+            <section class="management-card" aria-labelledby="modulos-heading">
+                <h2 id="modulos-heading">Módulos</h2>
+                <p>Organiza las unidades de aprendizaje y administra sus títulos, descripciones y orden.</p>
+                <div class="actions">
+                    <a class="button button-primary" href="{% url 'cursos_modulo_list' %}">Ver módulos</a>
+                    <a class="button" href="{% url 'cursos_modulo_form' %}">Crear módulo</a>
+                </div>
+            </section>
+
+            <section class="management-card" aria-labelledby="lecciones-heading">
+                <h2 id="lecciones-heading">Lecciones</h2>
+                <p>Administra preguntas, respuestas correctas, explicaciones y el módulo de cada lección.</p>
+                <div class="actions">
+                    <a class="button button-primary" href="{% url 'cursos_leccion_list' %}">Ver lecciones</a>
+                    <a class="button" href="{% url 'cursos_leccion_form' %}">Crear lección</a>
+                </div>
+            </section>
+        </div>
     </main>
 </body>
 </html>

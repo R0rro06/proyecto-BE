@@ -1,0 +1,304 @@
+:root {
+    color-scheme: light;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #172b4d;
+    background: #f5f7fb;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    min-height: 100vh;
+    margin: 0;
+    background: #f5f7fb;
+}
+
+a {
+    color: #285c48;
+}
+
+body > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem clamp(1rem, 5vw, 4rem);
+    background: #fff;
+    border-bottom: 1px solid #e5eaf2;
+}
+
+body > header a,
+main > a {
+    font-weight: 700;
+    text-decoration: none;
+}
+
+body > header a:hover,
+body > header a:focus-visible,
+main > a:hover,
+main > a:focus-visible {
+    text-decoration: underline;
+}
+
+body > main {
+    width: min(1000px, 100% - 2rem);
+    margin: 2.5rem auto 4rem;
+}
+
+h1,
+h2,
+h3 {
+    color: #172b4d;
+}
+
+h1 {
+    margin: 0 0 1rem;
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+}
+
+p {
+    line-height: 1.6;
+}
+
+.page-intro {
+    margin-bottom: 1.5rem;
+}
+
+.content-card,
+.form-card,
+.danger-card,
+.lesson-card {
+    padding: clamp(1.25rem, 4vw, 2rem);
+    background: #fff;
+    border: 1px solid #e5eaf2;
+    border-radius: 1.25rem;
+    box-shadow: 0 8px 24px rgb(23 43 77 / 5%);
+}
+
+.table-wrap {
+    overflow-x: auto;
+    background: #fff;
+    border: 1px solid #e5eaf2;
+    border-radius: 1rem;
+    box-shadow: 0 8px 24px rgb(23 43 77 / 5%);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+th,
+td {
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid #e5eaf2;
+    vertical-align: top;
+}
+
+th {
+    color: #285c48;
+    background: #e8f5ef;
+    font-size: 0.9rem;
+}
+
+tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+td a {
+    display: inline-block;
+    margin: 0.15rem 0.65rem 0.15rem 0;
+    font-weight: 700;
+}
+
+.page-actions,
+.form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 1.25rem 0;
+}
+
+.button,
+button {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0.7rem 1rem;
+    color: #285c48;
+    background: #fff;
+    border: 1px solid #285c48;
+    border-radius: 0.75rem;
+    font: inherit;
+    font-weight: 700;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 150ms ease, color 150ms ease, transform 150ms ease;
+}
+
+.button-primary,
+button[type="submit"]:not(.button-danger) {
+    color: #fff;
+    background: #285c48;
+}
+
+.button:hover,
+.button:focus-visible,
+button:hover,
+button:focus-visible {
+    color: #fff;
+    background: #378263;
+    border-color: #378263;
+    transform: translateY(-1px);
+}
+
+.button-danger,
+button.button-danger {
+    color: #fff;
+    background: #a93232;
+    border-color: #a93232;
+}
+
+.button-danger:hover,
+.button-danger:focus-visible,
+button.button-danger:hover,
+button.button-danger:focus-visible {
+    background: #842626;
+    border-color: #842626;
+}
+
+.form-card p {
+    margin: 0 0 1.15rem;
+}
+
+.form-card label {
+    display: block;
+    margin-bottom: 0.45rem;
+    font-weight: 700;
+}
+
+.form-card input:not([type="radio"]):not([type="checkbox"]),
+.form-card select,
+.form-card textarea {
+    display: block;
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.7rem 0.8rem;
+    color: #172b4d;
+    background: #fff;
+    border: 1px solid #b7c2d3;
+    border-radius: 0.65rem;
+    font: inherit;
+}
+
+.form-card textarea {
+    min-height: 8rem;
+    resize: vertical;
+}
+
+.form-card input:focus,
+.form-card select:focus,
+.form-card textarea:focus {
+    border-color: #378263;
+    outline: 3px solid rgb(55 130 99 / 18%);
+}
+
+.form-card input[type="radio"] {
+    accent-color: #285c48;
+}
+
+.helptext {
+    display: block;
+    margin-top: 0.35rem;
+    color: #52627a;
+    font-size: 0.9rem;
+}
+
+.errorlist {
+    margin: 0.4rem 0;
+    padding-left: 1.25rem;
+    color: #a93232;
+}
+
+.empty-state,
+.status-message {
+    padding: 1.25rem;
+    background: #fff;
+    border: 1px solid #e5eaf2;
+    border-radius: 1rem;
+}
+
+.status-message {
+    margin: 0 0 1rem;
+    border-left: 4px solid #378263;
+}
+
+.danger-card {
+    border-top: 4px solid #c75146;
+}
+
+.danger-card p {
+    color: #52627a;
+}
+
+.lesson-card {
+    margin: 1rem 0;
+}
+
+.answer-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 0;
+    border: 0;
+}
+
+.answer-options legend {
+    width: 100%;
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+}
+
+.answer-options label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.8rem 1rem;
+    background: #f5f7fb;
+    border: 1px solid #d6deea;
+    border-radius: 0.75rem;
+}
+
+@media (max-width: 650px) {
+    body > header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    body > main {
+        margin-top: 1.5rem;
+    }
+
+    .page-actions,
+    .form-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .page-actions .button,
+    .form-actions .button,
+    .form-actions button {
+        width: 100%;
+    }
+
+    th,
+    td {
+        padding: 0.75rem;
+    }
+}

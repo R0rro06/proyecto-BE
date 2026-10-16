@@ -2,10 +2,25 @@ from django import forms
 from .models import Leccion, Modulo, Estado, Perfil, Progreso, Rol, Usuario
 
 class LeccionForm(forms.ModelForm):
+    es_verdad = forms.TypedChoiceField(
+        choices=((1, 'Verdadero'), (0, 'Falso')),
+        coerce=int,
+        label='Respuesta correcta',
+    )
+
     class Meta:
         model = Leccion
-        fields = '__all__'
+        fields = ('pregunta', 'es_verdad', 'explicacion', 'modulo')
         
+
+class RespuestaLeccionForm(forms.Form):
+    respuesta = forms.TypedChoiceField(
+        choices=(('1', 'Verdadero'), ('0', 'Falso')),
+        coerce=lambda value: value == '1',
+        widget=forms.RadioSelect,
+        label='Elige tu respuesta',
+    )
+
 
 class ModuloForm(forms.ModelForm):
     class Meta:
@@ -16,11 +31,6 @@ class ModuloForm(forms.ModelForm):
 class EstadoForm(forms.ModelForm):
     class Meta:
         model = Estado
-        fields = '__all__'
-
-class LeccionForm(forms.ModelForm):
-    class Meta:
-        model = Leccion
         fields = '__all__'
 
 class ModuloForm(forms.ModelForm):

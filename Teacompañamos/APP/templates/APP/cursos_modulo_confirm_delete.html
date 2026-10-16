@@ -1,17 +1,27 @@
 <!DOCTYPE html>
 <html lang="es">
+{% load static %}
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Eliminar módulo</title>
+    <link rel="stylesheet" href="{% static 'APP/admin.css' %}">
 </head>
 <body>
-    <h1>Eliminar módulo</h1>
-    <p>¿Seguro que quieres eliminar el módulo «{{ object.titulo }}»?</p>
-    <form method="post">
-        {% csrf_token %}
-        <button type="submit">Sí, eliminar</button>
-    </form>
-    <a href="{% url 'cursos_modulo_list' %}">Cancelar</a>
+    <header>
+        <a href="{% url 'cursos_modulo_list' %}">← Volver a módulos</a>
+        <strong>Teacompañamos · Módulos</strong>
+    </header>
+    <main>
+        <section class="danger-card">
+            <h1>Eliminar módulo</h1>
+            <p>¿Seguro que quieres eliminar el módulo «{{ object.titulo }}»?</p>
+            <form method="post" class="form-actions">
+                {% csrf_token %}
+                <button class="button-danger" type="submit">Sí, eliminar</button>
+                <a class="button" href="{% url 'cursos_modulo_list' %}">Cancelar</a>
+            </form>
+        </section>
+    </main>
 </body>
 </html>
