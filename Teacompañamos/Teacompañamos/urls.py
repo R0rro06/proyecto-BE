@@ -32,4 +32,8 @@ urlpatterns = [
     path('lecciones/create/', views.CursosLeccionCreateView.as_view(), name='cursos_leccion_form'),
     path('lecciones/<int:pk>/update/', views.CursosLeccionUpdateView.as_view(), name='cursos_leccion_update'),
     path('lecciones/<int:pk>/delete/', views.CursosLeccionDeleteView.as_view(), name='cursos_leccion_delete'),
+    path('roles/', views.RolListView.as_view(), name='rol_list'),
+    path('roles/create/', views.RolCreateView.as_view(), name='rol_form'),
+    path('roles/<int:pk>/update/', views.RolUpdateView.as_view(), name='rol_update'),
+    path('roles/<int:pk>/delete/', views.RolDeleteView.as_view(), name='rol_delete'),
 ]

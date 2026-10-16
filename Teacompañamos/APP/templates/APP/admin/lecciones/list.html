@@ -20,6 +20,34 @@
             <p>Gestiona preguntas, respuestas y explicaciones de cada módulo.</p>
         </div>
 
+        <form method="get" class="filter-bar">
+            <div class="filter-field">
+                <label for="lesson-search">Buscar</label>
+                <input id="lesson-search" type="search" name="q" value="{{ request.GET.q }}" placeholder="Pregunta o explicación">
+            </div>
+            <div class="filter-field">
+                <label for="lesson-module">Módulo</label>
+                <select id="lesson-module" name="modulo">
+                    <option value="">Todos los módulos</option>
+                    {% for modulo in modulos_filtro %}
+                        <option value="{{ modulo.pk }}" {% if request.GET.modulo == modulo.pk|stringformat:"s" %}selected{% endif %}>{{ modulo.titulo }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-field">
+                <label for="lesson-answer">Respuesta correcta</label>
+                <select id="lesson-answer" name="respuesta">
+                    <option value="">Cualquiera</option>
+                    <option value="1" {% if request.GET.respuesta == '1' %}selected{% endif %}>Verdadero</option>
+                    <option value="0" {% if request.GET.respuesta == '0' %}selected{% endif %}>Falso</option>
+                </select>
+            </div>
+            <div class="filter-actions">
+                <button type="submit">Filtrar</button>
+                <a class="button" href="{% url 'cursos_leccion_list' %}">Limpiar</a>
+            </div>
+        </form>
+
     {% if messages %}
         {% for message in messages %}
             <p class="status-message" role="status">{{ message }}</p>
@@ -54,8 +82,12 @@
         </div>
     {% else %}
         <div class="empty-state">
-            <p>Aún no hay lecciones registradas. Puedes crear la primera.</p>
-            <a class="button button-primary" href="{% url 'cursos_leccion_form' %}">Crear lección</a>
+            {% if request.GET.q or request.GET.modulo or request.GET.respuesta %}
+                <p>No hay lecciones que coincidan con esos criterios.</p>
+            {% else %}
+                <p>Aún no hay lecciones registradas. Puedes crear la primera.</p>
+                <a class="button button-primary" href="{% url 'cursos_leccion_form' %}">Crear lección</a>
+            {% endif %}
         </div>
     {% endif %}
     </main>

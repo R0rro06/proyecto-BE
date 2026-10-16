@@ -83,7 +83,7 @@
 
         .management-grid {
             display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
             gap: 1.25rem;
         }
 
@@ -194,6 +194,15 @@
                 <div class="actions">
                     <a class="button button-primary" href="{% url 'cursos_leccion_list' %}">Ver lecciones</a>
                     <a class="button" href="{% url 'cursos_leccion_form' %}">Crear lección</a>
+                </div>
+            </section>
+
+            <section class="management-card" aria-labelledby="roles-heading">
+                <h2 id="roles-heading">Roles</h2>
+                <p>Administra los roles disponibles para asignarlos a los perfiles de usuario.</p>
+                <div class="actions">
+                    <a class="button button-primary" href="{% url 'rol_list' %}">Ver roles</a>
+                    <a class="button" href="{% url 'rol_form' %}">Crear rol</a>
                 </div>
             </section>
         </div>

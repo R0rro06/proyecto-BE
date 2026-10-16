@@ -2,24 +2,24 @@ from functools import wraps
 
 from django.contrib import messages
 from django.contrib.auth.hashers import check_password, make_password
-from django.db.models import Prefetch
+from django.db.models import Count, Prefetch, Q
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 from django.views import View
 
 from . import forms
-from .models import Leccion, Modulo, Usuario
+from .models import Leccion, Modulo, Rol, Usuario
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
 from django.urls import reverse_lazy
 
 
 class PanelAdminView(TemplateView):
-    template_name = 'APP/panel_admin.html'
+    template_name = 'APP/admin/panel_admin.html'
 
 
 class DashboardView(TemplateView):
-    template_name = 'APP/dashboard.html'
+    template_name = 'APP/learning/dashboard.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -39,7 +39,7 @@ class DashboardView(TemplateView):
 
 
 class AprenderModuloView(TemplateView):
-    template_name = 'APP/aprender_modulo.html'
+    template_name = 'APP/learning/modulo.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -57,7 +57,7 @@ class AprenderModuloView(TemplateView):
 
 
 class ResponderLeccionView(View):
-    template_name = 'APP/responder_leccion.html'
+    template_name = 'APP/learning/leccion.html'
 
     def get_leccion(self, pk):
         return get_object_or_404(
@@ -91,24 +91,39 @@ class ResponderLeccionView(View):
 
 class CursosModuloListView(ListView):
     model = Modulo
-    template_name = 'APP/cursos_modulo_list.html'
+    template_name = 'APP/admin/modulos/list.html'
     context_object_name = 'modulos'
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        termino = self.request.GET.get('q', '').strip()
+        orden = self.request.GET.get('orden', '').strip()
+
+        if termino:
+            queryset = queryset.filter(
+                Q(titulo__icontains=termino) | Q(descripcion__icontains=termino)
+            )
+        if orden.isdecimal():
+            queryset = queryset.filter(orden=int(orden))
+
+        return queryset.order_by('orden')
+
 
 class CursosModuloCreateView(CreateView):
     model = Modulo
     form_class = forms.ModuloForm
-    template_name = 'APP/cursos_modulo_form.html'
+    template_name = 'APP/admin/modulos/form.html'
     success_url = reverse_lazy('cursos_modulo_list')
 
 class CursosModuloUpdateView(UpdateView):
     model = Modulo
     form_class = forms.ModuloForm
-    template_name = 'APP/cursos_modulo_form.html'
+    template_name = 'APP/admin/modulos/form.html'
     success_url = reverse_lazy('cursos_modulo_list')
 
 class CursosModuloDeleteView(DeleteView):
     model = Modulo
-    template_name = 'APP/cursos_modulo_confirm_delete.html'
+    template_name = 'APP/admin/modulos/confirm_delete.html'
     success_url = reverse_lazy('cursos_modulo_list')
 
     def form_valid(self, form):
@@ -128,24 +143,47 @@ class CursosModuloDeleteView(DeleteView):
 
 class CursosLeccionListView(ListView):
     model = Leccion
-    template_name = 'APP/cursos_leccion_list.html'
+    template_name = 'APP/admin/lecciones/list.html'
     context_object_name = 'lecciones'
+
+    def get_queryset(self):
+        queryset = super().get_queryset().select_related('modulo')
+        termino = self.request.GET.get('q', '').strip()
+        modulo_id = self.request.GET.get('modulo', '').strip()
+        respuesta = self.request.GET.get('respuesta', '').strip()
+
+        if termino:
+            queryset = queryset.filter(
+                Q(pregunta__icontains=termino) | Q(explicacion__icontains=termino)
+            )
+        if modulo_id.isdecimal():
+            queryset = queryset.filter(modulo_id=int(modulo_id))
+        if respuesta in {'0', '1'}:
+            queryset = queryset.filter(es_verdad=int(respuesta))
+
+        return queryset.order_by('modulo__orden', 'id')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['modulos_filtro'] = Modulo.objects.order_by('orden')
+        return context
+
 
 class CursosLeccionCreateView(CreateView):
     model = Leccion
     form_class = forms.LeccionForm
-    template_name = 'APP/cursos_leccion_form.html'
+    template_name = 'APP/admin/lecciones/form.html'
     success_url = reverse_lazy('cursos_leccion_list')
 
 class CursosLeccionUpdateView(UpdateView):
     model = Leccion
     form_class = forms.LeccionForm
-    template_name = 'APP/cursos_leccion_form.html'
+    template_name = 'APP/admin/lecciones/form.html'
     success_url = reverse_lazy('cursos_leccion_list')
 
 class CursosLeccionDeleteView(DeleteView):
     model = Leccion
-    template_name = 'APP/cursos_leccion_confirm_delete.html'
+    template_name = 'APP/admin/lecciones/confirm_delete.html'
     success_url = reverse_lazy('cursos_leccion_list')
 
     def form_valid(self, form):
@@ -155,5 +193,49 @@ class CursosLeccionDeleteView(DeleteView):
                 'No se puede eliminar la lección mientras tenga progreso asociado.',
             )
             return redirect('cursos_leccion_list')
+        return super().form_valid(form)
+
+
+class RolListView(ListView):
+    model = Rol
+    template_name = 'APP/admin/roles/list.html'
+    context_object_name = 'roles'
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        termino = self.request.GET.get('q', '').strip()
+        if termino:
+            queryset = queryset.filter(
+                Q(nombre__icontains=termino) | Q(descripcion__icontains=termino)
+            )
+        return queryset.annotate(perfiles_count=Count('perfil')).order_by('nombre')
+
+
+class RolCreateView(CreateView):
+    model = Rol
+    form_class = forms.RolForm
+    template_name = 'APP/admin/roles/form.html'
+    success_url = reverse_lazy('rol_list')
+
+
+class RolUpdateView(UpdateView):
+    model = Rol
+    form_class = forms.RolForm
+    template_name = 'APP/admin/roles/form.html'
+    success_url = reverse_lazy('rol_list')
+
+
+class RolDeleteView(DeleteView):
+    model = Rol
+    template_name = 'APP/admin/roles/confirm_delete.html'
+    success_url = reverse_lazy('rol_list')
+
+    def form_valid(self, form):
+        if self.object.perfil_set.exists():
+            messages.error(
+                self.request,
+                'No se puede eliminar este rol mientras esté asignado a perfiles.',
+            )
+            return redirect('rol_list')
         return super().form_valid(form)
     

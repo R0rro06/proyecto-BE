@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es">
+{% load static %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eliminar rol</title>
+    <link rel="stylesheet" href="{% static 'APP/admin.css' %}">
+</head>
+<body>
+    <header>
+        <a href="{% url 'rol_list' %}">← Volver a roles</a>
+        <strong>Teacompañamos · Roles</strong>
+    </header>
+    <main>
+        <section class="danger-card">
+            <h1>Eliminar rol</h1>
+            <p>¿Seguro que quieres eliminar el rol «{{ object.nombre }}»?</p>
+            <p>Solo se podrá eliminar si no está asignado a ningún perfil.</p>
+            <form method="post" class="form-actions">
+                {% csrf_token %}
+                <button class="button-danger" type="submit">Sí, eliminar</button>
+                <a class="button" href="{% url 'rol_list' %}">Cancelar</a>
+            </form>
+        </section>
+    </main>
+</body>
+</html>

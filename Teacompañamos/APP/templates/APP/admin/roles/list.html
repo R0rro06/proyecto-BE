@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+{% load static %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrar roles</title>
+    <link rel="stylesheet" href="{% static 'APP/admin.css' %}">
+</head>
+<body>
+    <header>
+        <a href="{% url 'panel_administracion' %}">Volver al panel</a>
+        <strong>Teacompañamos · Roles</strong>
+        <a class="button button-primary" href="{% url 'rol_form' %}">Crear rol</a>
+    </header>
+
+    <main>
+        <div class="page-intro">
+            <h1>Administrar roles</h1>
+            <p>Gestiona los roles que pueden asignarse a los perfiles.</p>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <p class="status-message" role="status">{{ message }}</p>
+            {% endfor %}
+        {% endif %}
+
+        <form method="get" class="filter-bar">
+            <div class="filter-field">
+                <label for="role-search">Buscar rol</label>
+                <input id="role-search" type="search" name="q" value="{{ request.GET.q }}" placeholder="Nombre o descripción">
+            </div>
+            <div class="filter-actions">
+                <button type="submit">Buscar</button>
+                <a class="button" href="{% url 'rol_list' %}">Limpiar</a>
+            </div>
+        </form>
+
+        {% if roles %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Descripción</th>
+                            <th>Perfiles asignados</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rol in roles %}
+                            <tr>
+                                <td>{{ rol.nombre }}</td>
+                                <td>{{ rol.descripcion|default:"—" }}</td>
+                                <td>{{ rol.perfiles_count }}</td>
+                                <td>
+                                    <a class="button" href="{% url 'rol_update' rol.pk %}">Editar</a>
+                                    <a class="button button-danger" href="{% url 'rol_delete' rol.pk %}">Eliminar</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                {% if request.GET.q %}
+                    <p>No hay roles que coincidan con la búsqueda.</p>
+                {% else %}
+                    <p>Aún no hay roles registrados. Puedes crear el primero.</p>
+                    <a class="button button-primary" href="{% url 'rol_form' %}">Crear rol</a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </main>
+</body>
+</html>

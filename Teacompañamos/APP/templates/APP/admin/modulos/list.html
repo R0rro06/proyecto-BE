@@ -20,6 +20,21 @@
             <p>Organiza los módulos de aprendizaje y sus lecciones.</p>
         </div>
 
+        <form method="get" class="filter-bar">
+            <div class="filter-field">
+                <label for="module-search">Buscar</label>
+                <input id="module-search" type="search" name="q" value="{{ request.GET.q }}" placeholder="Título o descripción">
+            </div>
+            <div class="filter-field filter-order">
+                <label for="module-order">Orden</label>
+                <input id="module-order" type="number" min="0" name="orden" value="{{ request.GET.orden }}" placeholder="Cualquier orden">
+            </div>
+            <div class="filter-actions">
+                <button type="submit">Filtrar</button>
+                <a class="button" href="{% url 'cursos_modulo_list' %}">Limpiar</a>
+            </div>
+        </form>
+
     {% if messages %}
         {% for message in messages %}
             <p class="status-message" role="status">{{ message }}</p>
@@ -54,8 +69,12 @@
         </div>
     {% else %}
         <div class="empty-state">
-            <p>Aún no hay módulos registrados. Puedes crear el primero.</p>
-            <a class="button button-primary" href="{% url 'cursos_modulo_form' %}">Crear módulo</a>
+            {% if request.GET.q or request.GET.orden %}
+                <p>No hay módulos que coincidan con esos criterios.</p>
+            {% else %}
+                <p>Aún no hay módulos registrados. Puedes crear el primero.</p>
+                <a class="button button-primary" href="{% url 'cursos_modulo_form' %}">Crear módulo</a>
+            {% endif %}
         </div>
     {% endif %}
     </main>
