@@ -19,6 +19,8 @@ class PanelAdminView(TemplateView):
 
 
 class DashboardView(TemplateView):
+    """Muestra los módulos y lecciones disponibles, sin progreso personal."""
+
     template_name = 'APP/learning/dashboard.html'
 
     def get_context_data(self, **kwargs):
@@ -39,6 +41,8 @@ class DashboardView(TemplateView):
 
 
 class AprenderModuloView(TemplateView):
+    """Carga un módulo y sus lecciones para la página de aprendizaje."""
+
     template_name = 'APP/learning/modulo.html'
 
     def get_context_data(self, **kwargs):
@@ -79,6 +83,7 @@ class ResponderLeccionView(View):
         context = {'leccion': leccion, 'form': form}
 
         if form.is_valid():
+            # Solo evalúa la respuesta; no registra intentos ni progreso.
             context['respuesta_enviada'] = True
             context['es_correcta'] = (
                 form.cleaned_data['respuesta'] == bool(leccion.es_verdad)
@@ -99,6 +104,7 @@ class CursosModuloListView(ListView):
         termino = self.request.GET.get('q', '').strip()
         orden = self.request.GET.get('orden', '').strip()
 
+        # Combina la búsqueda por texto con el filtro de orden, si se enviaron.
         if termino:
             queryset = queryset.filter(
                 Q(titulo__icontains=termino) | Q(descripcion__icontains=termino)
@@ -128,6 +134,7 @@ class CursosModuloDeleteView(DeleteView):
 
     def form_valid(self, form):
         if self.object.leccion_set.exists():
+            # No se puede borrar un módulo mientras sus lecciones dependan de él.
             messages.error(
                 self.request,
                 f'No se puede eliminar el módulo «{self.object.titulo}» porque contiene lecciones. '
@@ -152,6 +159,7 @@ class CursosLeccionListView(ListView):
         modulo_id = self.request.GET.get('modulo', '').strip()
         respuesta = self.request.GET.get('respuesta', '').strip()
 
+        # Los filtros de texto, módulo y respuesta se pueden combinar.
         if termino:
             queryset = queryset.filter(
                 Q(pregunta__icontains=termino) | Q(explicacion__icontains=termino)
@@ -188,6 +196,7 @@ class CursosLeccionDeleteView(DeleteView):
 
     def form_valid(self, form):
         if self.object.progreso_set.exists():
+            # Impide eliminar una lección que ya tiene progreso asociado.
             messages.error(
                 self.request,
                 'No se puede eliminar la lección mientras tenga progreso asociado.',
@@ -232,6 +241,7 @@ class RolDeleteView(DeleteView):
 
     def form_valid(self, form):
         if self.object.perfil_set.exists():
+            # Conserva el rol mientras esté asignado a uno o más perfiles.
             messages.error(
                 self.request,
                 'No se puede eliminar este rol mientras esté asignado a perfiles.',

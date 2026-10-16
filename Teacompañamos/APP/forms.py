@@ -2,6 +2,7 @@ from django import forms
 from .models import Leccion, Modulo, Estado, Perfil, Progreso, Rol, Usuario
 
 class LeccionForm(forms.ModelForm):
+    # Muestra opciones legibles y conserva los valores 1/0 del modelo.
     es_verdad = forms.TypedChoiceField(
         choices=((1, 'Verdadero'), (0, 'Falso')),
         coerce=int,
@@ -14,6 +15,7 @@ class LeccionForm(forms.ModelForm):
         
 
 class RespuestaLeccionForm(forms.Form):
+    # Convierte la opción enviada a bool para compararla con Leccion.es_verdad.
     respuesta = forms.TypedChoiceField(
         choices=(('1', 'Verdadero'), ('0', 'Falso')),
         coerce=lambda value: value == '1',
