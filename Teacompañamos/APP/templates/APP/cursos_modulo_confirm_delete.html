@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eliminar módulo</title>
+</head>
+<body>
+    <h1>Eliminar módulo</h1>
+    <p>¿Seguro que quieres eliminar el módulo «{{ object.titulo }}»?</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit">Sí, eliminar</button>
+    </form>
+    <a href="{% url 'cursos_modulo_list' %}">Cancelar</a>
+</body>
+</html>

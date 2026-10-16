@@ -1,20 +1,21 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>{% if object %}Editar módulo{% else %}Crear módulo{% endif %}</title>
 </head>
 <body>
     {% if object %}
-        <h1>Editar Módulo</h1>
+        <h1>Editar módulo</h1>
     {% else %}
-        <h1>Crear Módulo</h1>
+        <h1>Crear módulo</h1>
     {% endif %}
     <form method="post">
         {% csrf_token %}
         {{ form.as_p }}
         <button type="submit">Guardar</button>
     </form>
+    <a href="{% url 'cursos_modulo_list' %}">Cancelar</a>
 </body>
 </html>

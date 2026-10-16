@@ -1,31 +1,51 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Administrar módulos</title>
 </head>
 <body>
-    <h1>Módulos</h1>
-    <ul>
-        {% for modulo in modulos %}
-            <li>{{ modulo.titulo}}</li>
+    <header>
+        <a href="{% url 'panel_administracion' %}">Volver al panel</a>
+        <h1>Administrar módulos</h1>
+        <a href="{% url 'cursos_modulo_form' %}">Crear módulo</a>
+    </header>
+
+    {% if messages %}
+        {% for message in messages %}
+            <p role="status">{{ message }}</p>
         {% endfor %}
-    </ul>
-    <table>
-        <thead>
-            <tr>
-                <th>Nombre</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for modulo in modulos %}
-                <tr>
-                    <td>{{ modulo.titulo}}</td>
-                </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    {% endif %}
+
+    {% if modulos %}
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Orden</th>
+                        <th>Título</th>
+                        <th>Descripción</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for modulo in modulos %}
+                        <tr>
+                            <td>{{ modulo.orden }}</td>
+                            <td>{{ modulo.titulo }}</td>
+                            <td>{{ modulo.descripcion }}</td>
+                            <td>
+                                <a href="{% url 'cursos_modulo_update' modulo.pk %}">Editar</a>
+                                <a href="{% url 'cursos_modulo_delete' modulo.pk %}">Eliminar</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>Aún no hay módulos registrados. Puedes crear el primero.</p>
+    {% endif %}
 </body>
 </html>

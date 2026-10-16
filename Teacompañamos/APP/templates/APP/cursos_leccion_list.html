@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrar lecciones</title>
+</head>
+<body>
+    <header>
+        <a href="{% url 'panel_administracion' %}">Volver al panel</a>
+        <h1>Administrar lecciones</h1>
+        <a href="{% url 'cursos_leccion_form' %}">Crear lección</a>
+    </header>
+
+    {% if messages %}
+        {% for message in messages %}
+            <p role="status">{{ message }}</p>
+        {% endfor %}
+    {% endif %}
+
+    {% if lecciones %}
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Pregunta</th>
+                        <th>Respuesta correcta</th>
+                        <th>Módulo</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for leccion in lecciones %}
+                        <tr>
+                            <td>{{ leccion.pregunta }}</td>
+                            <td>{{ leccion.es_verdad }}</td>
+                            <td>{{ leccion.modulo }}</td>
+                            <td>
+                                <a href="{% url 'cursos_leccion_update' leccion.pk %}">Editar</a>
+                                <a href="{% url 'cursos_leccion_delete' leccion.pk %}">Eliminar</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>Aún no hay lecciones registradas. Puedes crear la primera.</p>
+    {% endif %}
+</body>
+</html>

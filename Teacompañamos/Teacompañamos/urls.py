@@ -20,9 +20,13 @@ from django.urls import path
 from APP import views
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('panel_administracion/', views.PanelAdminView.as_view(), name='panel_administracion'),
     path('modulos/', views.CursosModuloListView.as_view(), name='cursos_modulo_list'),
     path('modulos/create/', views.CursosModuloCreateView.as_view(), name='cursos_modulo_form'),
     path('modulos/<int:pk>/update/', views.CursosModuloUpdateView.as_view(), name='cursos_modulo_update'),
     path('modulos/<int:pk>/delete/', views.CursosModuloDeleteView.as_view(), name='cursos_modulo_delete'),
+    path('lecciones/', views.CursosLeccionListView.as_view(), name='cursos_leccion_list'),
+    path('lecciones/create/', views.CursosLeccionCreateView.as_view(), name='cursos_leccion_form'),
+    path('lecciones/<int:pk>/update/', views.CursosLeccionUpdateView.as_view(), name='cursos_leccion_update'),
+    path('lecciones/<int:pk>/delete/', views.CursosLeccionDeleteView.as_view(), name='cursos_leccion_delete'),
 ]
