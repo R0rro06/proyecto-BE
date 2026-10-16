@@ -130,8 +130,8 @@ class CursosModuloDeleteView(DeleteView):
         if self.object.leccion_set.exists():
             messages.error(
                 self.request,
-                'No se puede eliminar el módulo mientras tenga lecciones. '
-                'Elimina o mueve sus lecciones primero.',
+                f'No se puede eliminar el módulo «{self.object.titulo}» porque contiene lecciones. '
+                'Primero elimina esas lecciones o muévelas a otro módulo.',
             )
             return redirect('cursos_modulo_list')
         return super().form_valid(form)

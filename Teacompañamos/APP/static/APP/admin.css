@@ -283,6 +283,12 @@ button.button-danger:focus-visible {
     border-left: 4px solid #378263;
 }
 
+.status-message.error {
+    color: #842626;
+    background: #fff4f2;
+    border-left-color: #c75146;
+}
+
 .danger-card {
     border-top: 4px solid #c75146;
 }

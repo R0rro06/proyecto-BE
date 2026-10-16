@@ -37,7 +37,7 @@
 
     {% if messages %}
         {% for message in messages %}
-            <p class="status-message" role="status">{{ message }}</p>
+            <p class="status-message {{ message.tags }}" role="{% if message.tags == 'error' %}alert{% else %}status{% endif %}">{{ message }}</p>
         {% endfor %}
     {% endif %}
 
