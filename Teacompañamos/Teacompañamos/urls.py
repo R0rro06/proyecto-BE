@@ -20,6 +20,7 @@ from django.urls import path
 from APP import views
 
 urlpatterns = [
+    path('admin/', admin.site.urls),
     # Experiencia de aprendizaje.
     path('', views.DashboardView.as_view(), name='dashboard'),
     path('aprender/modulos/<int:pk>/', views.AprenderModuloView.as_view(), name='aprender_modulo'),
