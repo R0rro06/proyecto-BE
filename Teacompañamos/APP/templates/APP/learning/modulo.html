@@ -7,10 +7,12 @@
     <title>{{ modulo.titulo }} | Teacompañamos</title>
     <link rel="stylesheet" href="{% static 'APP/admin.css' %}">
     <link rel="stylesheet" href="{% static 'APP/modulo.css' %}">
+    <link rel="stylesheet" href="{% static 'APP/learning_controls.css' %}">
 </head>
-<body>
+<body{% if lectura_ampliada %} class="reading-large"{% endif %}>
     <header>
         <a href="{% url 'dashboard' %}">← Volver al dashboard</a>
+        {% include 'APP/learning/_controles.html' %}
     </header>
     <main>
         <h1>Módulo {{ modulo.orden }}: {{ modulo.titulo }}</h1>

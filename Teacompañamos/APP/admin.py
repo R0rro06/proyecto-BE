@@ -1,9 +1,33 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.models import Group, User
 from django.utils.decorators import method_decorator
 from django.views.decorators.debug import sensitive_post_parameters
 
 from .admin_forms import UsuarioChangeAdminForm, UsuarioCreationAdminForm
 from .models import Usuario
+
+
+admin.site.unregister(Group)
+admin.site.unregister(User)
+
+
+@admin.register(User)
+class UsuarioDjangoAdmin(UserAdmin):
+    """Conserva la gestión de cuentas sin edición de grupos."""
+
+    fieldsets = tuple(
+        (
+            title,
+            {
+                **options,
+                'fields': tuple(field for field in options['fields'] if field != 'groups'),
+            },
+        )
+        for title, options in UserAdmin.fieldsets
+    )
+    filter_horizontal = ('user_permissions',)
+    list_filter = ('is_staff', 'is_superuser', 'is_active')
 
 
 @admin.register(Usuario)
@@ -29,8 +53,3 @@ class UsuarioAdmin(admin.ModelAdmin):
             obj.save(update_fields=('username', 'email'))
         else:
             super().save_model(request, obj, form, change)
-
-    def has_delete_permission(self, request, obj=None):
-        if obj is not None and obj.perfil_set.exists():
-            return False
-        return super().has_delete_permission(request, obj)

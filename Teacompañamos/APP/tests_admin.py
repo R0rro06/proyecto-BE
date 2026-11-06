@@ -1,11 +1,11 @@
 from django.contrib import admin
 from django.contrib.auth.hashers import check_password, make_password
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, User
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
 from .admin_forms import UsuarioChangeAdminForm
-from .models import Perfil, Rol, Usuario
+from .models import Leccion, Modulo, Perfil, Progreso, Rol, Usuario
 
 
 class UsuarioAdminTests(TestCase):
@@ -28,6 +28,33 @@ class UsuarioAdminTests(TestCase):
         self.assertEqual(
             self.client.get(reverse('admin:APP_usuario_changelist')).status_code, 200,
         )
+
+    def test_grupos_no_se_administran_ni_se_asignan_desde_usuarios(self):
+        grupo = Group.objects.create(name='Docentes')
+        usuario = User.objects.create_user(
+            username='personal', password='Clave-Personal-2026!',
+        )
+        self.assertNotIn(Group, admin.site._registry)
+        self.assertEqual(self.client.get('/admin/auth/group/').status_code, 404)
+
+        url = reverse('admin:auth_user_change', args=[usuario.pk])
+        formulario = self.client.get(url)
+        self.assertEqual(formulario.status_code, 200)
+        self.assertNotContains(formulario, 'name="groups"')
+
+        respuesta = self.client.post(url, {
+            'username': usuario.username,
+            'first_name': '',
+            'last_name': '',
+            'email': '',
+            'is_active': 'on',
+            'date_joined_0': usuario.date_joined.date().isoformat(),
+            'date_joined_1': usuario.date_joined.time().strftime('%H:%M:%S'),
+            'groups': [str(grupo.pk)],
+            '_save': 'Guardar',
+        })
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertFalse(usuario.groups.exists())
 
     def test_usuario_anonimo_no_puede_administrar(self):
         self.client.logout()
@@ -181,21 +208,41 @@ class UsuarioAdminTests(TestCase):
         self.assertEqual(usuario.email, 'nuevo@example.com')
         self.assertTrue(check_password('Clave-Nueva-2026!', usuario.password))
 
-    def test_no_elimina_usuario_con_perfil(self):
+    def test_elimina_usuario_con_perfil_y_progreso_tras_confirmacion(self):
         usuario = Usuario.objects.create(
             username='estudiante',
             email='estudiante@example.com',
             password=make_password('Clave-Estudiante-2026!'),
         )
         rol = Rol.objects.create(nombre='Estudiante')
-        Perfil.objects.create(usuario=usuario, rol=rol)
-
-        response = self.client.post(
-            reverse('admin:APP_usuario_delete', args=[usuario.pk]),
-            {'post': 'yes'},
+        perfil = Perfil.objects.create(usuario=usuario, rol=rol)
+        otro_usuario = Usuario.objects.create(
+            username='otro', email='otro@example.com',
+            password=make_password('Clave-Otro-2026!'),
         )
-        self.assertEqual(response.status_code, 403)
+        otro_perfil = Perfil.objects.create(usuario=otro_usuario, rol=rol)
+        modulo = Modulo.objects.create(titulo='Inicio', descripcion='Contenido', orden=1)
+        leccion = Leccion.objects.create(
+            pregunta='¿Es correcto?', es_verdad=1, explicacion='Sí', modulo=modulo,
+        )
+        Progreso.objects.create(perfil=perfil, leccion=leccion, intentos=2)
+        Progreso.objects.create(perfil=otro_perfil, leccion=leccion, intentos=1)
+
+        url = reverse('admin:APP_usuario_delete', args=[usuario.pk])
+        confirmacion = self.client.get(url)
+        self.assertEqual(confirmacion.status_code, 200)
         self.assertTrue(Usuario.objects.filter(pk=usuario.pk).exists())
+        self.assertContains(confirmacion, 'Progreso')
+
+        response = self.client.post(url, {'post': 'yes'})
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(Usuario.objects.filter(pk=usuario.pk).exists())
+        self.assertFalse(Perfil.objects.filter(pk=perfil.pk).exists())
+        self.assertFalse(Progreso.objects.filter(perfil_id=perfil.pk).exists())
+        self.assertTrue(Usuario.objects.filter(pk=otro_usuario.pk).exists())
+        self.assertEqual(Progreso.objects.filter(perfil=otro_perfil).count(), 1)
+        self.assertTrue(Rol.objects.filter(pk=rol.pk).exists())
+        self.assertTrue(Leccion.objects.filter(pk=leccion.pk).exists())
 
     def test_elimina_usuario_sin_perfil(self):
         usuario = Usuario.objects.create(

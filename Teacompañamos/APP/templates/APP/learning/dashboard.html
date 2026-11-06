@@ -7,20 +7,21 @@
     <meta name="description" content="Tu espacio de aprendizaje en Teacompañamos.">
     <title>Aprender | Teacompañamos</title>
     <link rel="stylesheet" href="{% static 'APP/dashboard.css' %}">
+    <link rel="stylesheet" href="{% static 'APP/learning_controls.css' %}">
 </head>
-<body>
+<body{% if lectura_ampliada %} class="reading-large"{% endif %}>
     <header class="topbar">
         <a class="brand" href="{% url 'dashboard' %}">Teacompañamos</a>
-        <div>
-            <a class="admin-link" href="{% url 'panel_administracion' %}">Panel de administración</a>
-            <span class="role">Estudiante</span>
+        <div class="header-actions">
+            {% if can_manage_content %}<a class="admin-link" href="{% url 'panel_administracion' %}">Panel de administración</a>{% endif %}
+            {% include 'APP/learning/_controles.html' %}
         </div>
     </header>
 
     <main>
         <section class="welcome" aria-labelledby="welcome-heading">
-            <h1 id="welcome-heading">¡Hola, estudiante!</h1>
-            <p>Explora tus módulos y avanza a tu ritmo. Cuando se habiliten las cuentas, aquí también podrás ver tu progreso personal.</p>
+            <h1 id="welcome-heading">¡Hola{% if estudiante %}, {{ estudiante.username }}{% endif %}!</h1>
+            <p>Explora tus módulos y avanza a tu ritmo.{% if not estudiante %} Ingresa con tu cuenta para guardar tu progreso personal.{% endif %}</p>
         </section>
 
         <section class="summary" aria-label="Resumen de aprendizaje">
@@ -33,8 +34,8 @@
                 <span>{% if total_lecciones == 1 %}lección disponible{% else %}lecciones disponibles{% endif %}</span>
             </article>
             <article class="summary-card">
-                <strong>—</strong>
-                <span>progreso personal: se habilitará con las cuentas</span>
+                <strong>{% if estudiante %}{{ lecciones_completadas }}{% else %}—{% endif %}</strong>
+                <span>{% if estudiante %}lecciones completadas{% else %}ingresa para ver tu progreso{% endif %}</span>
             </article>
         </section>
 
@@ -71,7 +72,11 @@
 
         <aside class="progress-note" aria-labelledby="progress-heading">
             <h2 id="progress-heading">Tu progreso</h2>
-            <p>El avance individual se guardará y mostrará cuando exista una cuenta de estudiante vinculada a su perfil. Por ahora, no se asigna progreso a una persona para evitar mezclar datos entre visitantes.</p>
+            {% if estudiante %}
+                <p>Has completado {{ lecciones_completadas }} de {{ total_lecciones }} lecciones. Tus intentos se guardan en tu perfil.</p>
+            {% else %}
+                <p>Puedes explorar y responder sin una cuenta. Para guardar tus intentos y continuar tu avance, <a href="{% url 'acceso_estudiante' %}">ingresa como estudiante</a>.</p>
+            {% endif %}
         </aside>
     </main>
 </body>

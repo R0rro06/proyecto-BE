@@ -34,6 +34,14 @@ a {
     text-decoration: none;
 }
 
+.header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.6rem;
+}
+
 .role {
     padding: 0.5rem 0.8rem;
     color: #285c48;

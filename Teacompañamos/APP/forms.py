@@ -1,6 +1,14 @@
 from django import forms
 from .models import Leccion, Modulo, Estado, Perfil, Progreso, Rol, Usuario
 
+
+class AccesoEstudianteForm(forms.Form):
+    username = forms.CharField(max_length=100, label='Nombre de usuario')
+    password = forms.CharField(
+        label='Contraseña', widget=forms.PasswordInput, strip=False,
+    )
+
+
 class LeccionForm(forms.ModelForm):
     # Muestra opciones legibles y conserva los valores 1/0 del modelo.
     es_verdad = forms.TypedChoiceField(

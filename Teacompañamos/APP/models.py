@@ -46,7 +46,7 @@ class Estado(models.Model):
 
 class Perfil(models.Model):
     # Cada perfil vincula a un usuario con uno de sus roles.
-    usuario = models.ForeignKey('Usuario', models.DO_NOTHING)
+    usuario = models.ForeignKey('Usuario', models.CASCADE)
     rol = models.ForeignKey('Rol', models.DO_NOTHING)
 
     class Meta:
@@ -56,7 +56,7 @@ class Perfil(models.Model):
 
 class Progreso(models.Model):
     # El avance de una lección pertenece a un perfil, no a la lección global.
-    perfil = models.ForeignKey(Perfil, models.DO_NOTHING)
+    perfil = models.ForeignKey(Perfil, models.CASCADE)
     leccion = models.ForeignKey(Leccion, models.DO_NOTHING)
     estado = models.ForeignKey(Estado, models.DO_NOTHING, blank=True, null=True)
     intentos = models.IntegerField()

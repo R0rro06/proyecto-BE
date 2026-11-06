@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es">
+{% load static %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ingresar | Teacompañamos</title>
+    <link rel="stylesheet" href="{% static 'APP/admin.css' %}">
+    <link rel="stylesheet" href="{% static 'APP/acceso.css' %}">
+</head>
+<body>
+    <header>
+        <a href="{% url 'dashboard' %}">← Volver al inicio</a>
+    </header>
+    <main>
+        <h1>Ingresar como estudiante</h1>
+        <section class="form-card">
+            <p>Usa la cuenta que creó el administrador.</p>
+            <form method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <button type="submit">Ingresar</button>
+            </form>
+        </section>
+    </main>
+</body>
+</html>

@@ -31,6 +31,33 @@ cd Teacompañamos
 
 El admin permite gestionar los registros de la tabla `usuario` del proyecto.
 Las cuentas que entran al admin se almacenan por separado en `auth_user`.
+La gestión de grupos está deshabilitada en el administrador; los usuarios de
+Django se pueden editar sin cambiar su pertenencia a grupos.
+En **APP > Usuarios**, la eliminación individual de un estudiante borra también
+sus perfiles y registros de progreso después de la confirmación del Admin.
+Los roles y las lecciones permanecen disponibles.
+
+## Sesiones de estudiantes y cookies
+
+Las cuentas creadas en `/admin/` dentro de **APP > Usuarios** pueden ingresar en
+`/acceso/`. La contraseña se comprueba contra el hash guardado en `usuario`.
+El primer acceso reutiliza un perfil existente o prepara uno con el rol
+`Estudiante` si la cuenta todavía no tiene perfil.
+El dashboard sigue siendo público; los intentos y las lecciones completadas se
+guardan en `progreso` únicamente cuando el estudiante ha iniciado sesión.
+
+La sesión se guarda en la tabla `django_session` de la misma base `bd`. Su
+identificador viaja en una cookie del navegador que caduca al cerrar el
+navegador o después de una hora. El botón **Salir** cierra la sesión actual.
+La opción **Ampliar lectura** usa otra cookie durante 30 días y no contiene
+datos del usuario. El panel de contenido y sus rutas requieren una cuenta
+administradora de Django con los permisos correspondientes.
+
+Si la base no tiene aplicadas las migraciones de Django, ejecuta
+`..\.venv\Scripts\python.exe manage.py migrate` desde `Teacompañamos` antes de
+probar el acceso. Apache por sí solo no sirve este proyecto Django: para el
+entorno local usa `manage.py runserver`, salvo que hayas configurado Django en
+Apache por separado.
 
 Para recrear el entorno en este equipo y ejecutar las pruebas:
 

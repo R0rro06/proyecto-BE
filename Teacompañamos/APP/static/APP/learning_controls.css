@@ -1,0 +1,48 @@
+.learning-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.6rem;
+}
+
+.control-form {
+    margin: 0;
+}
+
+.control-button {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.5rem;
+    padding: 0.45rem 0.75rem;
+    border: 1px solid #b9d8ca;
+    border-radius: 0.75rem;
+    background: #fff;
+    color: #285c48;
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.control-button:hover,
+.control-button:focus-visible {
+    background: #e8f5ef;
+}
+
+.student-name {
+    color: #285c48;
+    font-weight: 700;
+}
+
+body.reading-large main {
+    font-size: 1.2rem;
+    line-height: 1.7;
+}
+
+@media (max-width: 700px) {
+    .learning-controls {
+        justify-content: flex-start;
+    }
+}

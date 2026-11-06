@@ -7,10 +7,12 @@
     <title>Responder lección | Teacompañamos</title>
     <link rel="stylesheet" href="{% static 'APP/admin.css' %}">
     <link rel="stylesheet" href="{% static 'APP/leccion.css' %}">
+    <link rel="stylesheet" href="{% static 'APP/learning_controls.css' %}">
 </head>
-<body>
+<body{% if lectura_ampliada %} class="reading-large"{% endif %}>
     <header>
         <a href="{% url 'aprender_modulo' leccion.modulo_id %}">← Volver a {{ leccion.modulo.titulo }}</a>
+        {% include 'APP/learning/_controles.html' %}
     </header>
     <main>
         <h1>Responde la lección</h1>
@@ -53,7 +55,11 @@
                 </form>
             {% endif %}
         </section>
-        <p>Esta respuesta no se guarda como progreso; el registro individual se añadirá cuando cada usuario tenga su perfil asociado.</p>
+        {% if estudiante %}
+            <p>Tu intento se guarda en tu perfil.</p>
+        {% else %}
+            <p>Esta respuesta no se guardará. <a href="{% url 'acceso_estudiante' %}">Ingresa con tu cuenta</a> para conservar tu progreso.</p>
+        {% endif %}
     </main>
 </body>
 </html>
