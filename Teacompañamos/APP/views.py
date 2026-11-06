@@ -161,6 +161,36 @@ def salir_estudiante(request):
 
 
 @require_POST
+def consentimiento_cookies(request):
+    choice = request.POST.get('consentimiento')
+    if choice not in ('aceptar', 'rechazar'):
+        return HttpResponse('Elección de cookies no válida.', status=400)
+    response = redirect(_safe_destination(request, fallback='inicio'))
+    response.set_cookie(
+        'consentimiento_cookies', choice, max_age=180 * 24 * 60 * 60,
+        httponly=True, samesite='Lax', secure=request.is_secure(),
+    )
+    if choice == 'rechazar':
+        response.delete_cookie('lectura_ampliada', samesite='Lax')
+        response.delete_cookie('tema', samesite='Lax')
+    return response
+
+
+@require_POST
+def preferencia_tema(request):
+    tema = request.POST.get('tema')
+    if tema not in ('claro', 'oscuro'):
+        return HttpResponse('Tema no válido.', status=400)
+    response = redirect(_safe_destination(request, fallback='inicio'))
+    if request.COOKIES.get('consentimiento_cookies') == 'aceptar':
+        response.set_cookie(
+            'tema', tema, max_age=180 * 24 * 60 * 60,
+            httponly=True, samesite='Lax', secure=request.is_secure(),
+        )
+    return response
+
+
+@require_POST
 def preferencia_lectura(request):
     response = redirect('dashboard')
     destination = request.POST.get('next', '')
@@ -169,7 +199,8 @@ def preferencia_lectura(request):
     ):
         response['Location'] = destination
 
-    if request.POST.get('lectura_ampliada') == '1':
+    if (request.POST.get('lectura_ampliada') == '1'
+            and request.COOKIES.get('consentimiento_cookies') == 'aceptar'):
         response.set_cookie(
             'lectura_ampliada', '1', max_age=30 * 24 * 60 * 60,
             httponly=True, samesite='Lax', secure=request.is_secure(),

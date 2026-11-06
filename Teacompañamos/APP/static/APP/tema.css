@@ -1,0 +1,21 @@
+html[data-tema="oscuro"] { color-scheme: dark; background: #111a23; color: #e4edf5; }
+html[data-tema="oscuro"] body { background: #111a23; color: #e4edf5; }
+html[data-tema="oscuro"] :is(header, section, article, .table-wrap, .cookie-preferences, .module-card, .lesson-card, .content-card, .form-card, .role-card, .danger-card) {
+    background: #1c2936; color: #e4edf5; border-color: #4a6072;
+}
+html[data-tema="oscuro"] :is(h1, h2, h3, h4, label, th, td, summary) { color: #e4edf5; }
+html[data-tema="oscuro"] a { color: #99e2bc; }
+html[data-tema="oscuro"] :is(input, select, textarea) { background: #111a23; color: #e4edf5; border-color: #7890a2; }
+html[data-tema="oscuro"] :is(th, td) { border-color: #4a6072; }
+html[data-tema="oscuro"] :is(thead, th, tbody tr:hover) { background: #25394b; }
+html[data-tema="oscuro"] .errorlist { color: #ffb8b8; }
+html[data-tema="oscuro"] .role-actions a:first-child { color: #fff; }
+html[data-tema="oscuro"] :is(.summary-card, .progress-note, .empty-state, .management-card, .question, .feedback, .answers label, .control-button, .role) {
+    background: #1c2936; color: #e4edf5; border-color: #4a6072;
+}
+html[data-tema="oscuro"] :is(.summary-card span, .module-card > p, .progress-note p, .management-card p) { color: #c2d0dd; }
+html[data-tema="oscuro"] :is(.summary-card strong, .lesson-count, .student-name) { color: #99e2bc; }
+#theme-form { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; margin-bottom: 1rem; }
+#theme-form :is(select, button) { font: inherit; padding: .5rem .75rem; border: 1px solid #628573; border-radius: .6rem; }
+#theme-form button { background: #285c48; color: #fff; cursor: pointer; }
+#theme-status { font-size: .9rem; }

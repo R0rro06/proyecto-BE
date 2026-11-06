@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-tema="{% if request.COOKIES.tema == 'oscuro' %}oscuro{% else %}claro{% endif %}">
 {% load static %}
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% if object %}Editar rol{% else %}Crear rol{% endif %}</title>
     <link rel="stylesheet" href="{% static 'APP/admin.css' %}">
+    <link rel="stylesheet" href="{% static 'APP/tema.css' %}">
 </head>
 <body>
     <header>
@@ -29,5 +30,6 @@
             </form>
         </section>
     </main>
+    {% include 'APP/learning/_cookies.html' %}
 </body>
 </html>

@@ -136,6 +136,7 @@ class SesionesYProgresoTests(TestCase):
 
     def test_cookie_lectura_se_aplica_y_se_borra(self):
         self.ingresar()
+        self.client.post(reverse('consentimiento_cookies'), {'consentimiento': 'aceptar'})
         response = self.client.post(reverse('preferencia_lectura'), {
             'lectura_ampliada': '1', 'next': reverse('aprender_modulo', args=[self.modulo.pk]),
         })

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-tema="{% if request.COOKIES.tema == 'oscuro' %}oscuro{% else %}claro{% endif %}">
 {% load static %}
 <head>
     <meta charset="UTF-8">
@@ -7,6 +7,7 @@
     <title>Crear cuenta | Teacompañamos</title>
     <link rel="stylesheet" href="{% static 'APP/admin.css' %}">
     <link rel="stylesheet" href="{% static 'APP/acceso.css' %}">
+    <link rel="stylesheet" href="{% static 'APP/tema.css' %}">
 </head>
 <body>
     <header><a href="{% url 'inicio' %}">← Volver al inicio</a></header>
@@ -23,5 +24,6 @@
             <p>¿Ya tienes cuenta? <a href="{% url 'acceso_estudiante' %}?tipo={{ tipo }}{% if next %}&amp;next={{ next|urlencode }}{% endif %}">Ingresa</a></p>
         </section>
     </main>
+    {% include 'APP/learning/_cookies.html' %}
 </body>
 </html>

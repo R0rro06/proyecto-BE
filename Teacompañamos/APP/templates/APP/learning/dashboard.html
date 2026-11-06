@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-tema="{% if request.COOKIES.tema == 'oscuro' %}oscuro{% else %}claro{% endif %}">
 {% load static %}
 <head>
     <meta charset="UTF-8">
@@ -8,6 +8,7 @@
     <title>Aprender | Teacompañamos</title>
     <link rel="stylesheet" href="{% static 'APP/dashboard.css' %}">
     <link rel="stylesheet" href="{% static 'APP/learning_controls.css' %}">
+    <link rel="stylesheet" href="{% static 'APP/tema.css' %}">
 </head>
 <body{% if lectura_ampliada %} class="reading-large"{% endif %}>
     <header class="topbar">
@@ -75,5 +76,6 @@
             <p>Has completado {{ lecciones_completadas }} de {{ total_lecciones }} lecciones. Tus intentos se guardan en tu perfil.</p>
         </aside>
     </main>
+    {% include 'APP/learning/_cookies.html' %}
 </body>
 </html>

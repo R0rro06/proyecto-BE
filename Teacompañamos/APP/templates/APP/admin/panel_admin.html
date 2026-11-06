@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-tema="{% if request.COOKIES.tema == 'oscuro' %}oscuro{% else %}claro{% endif %}">
 {% load static %}
 <head>
     <meta charset="UTF-8">
@@ -7,6 +7,7 @@
     <meta name="description" content="Administra los módulos y las lecciones de Teacompañamos.">
     <title>Panel de administración | Teacompañamos</title>
     <link rel="stylesheet" href="{% static 'APP/panel_admin.css' %}">
+    <link rel="stylesheet" href="{% static 'APP/tema.css' %}">
 </head>
 <body>
     <header class="topbar">
@@ -49,5 +50,6 @@
             </section>{% endif %}
         </div>
     </main>
+    {% include 'APP/learning/_cookies.html' %}
 </body>
 </html>

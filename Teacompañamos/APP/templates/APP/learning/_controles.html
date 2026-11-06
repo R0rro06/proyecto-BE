@@ -1,4 +1,7 @@
 <div class="learning-controls">
+    {% if request.COOKIES.consentimiento_cookies != 'aceptar' %}
+        <small>Para guardar la lectura ampliada, acepta las cookies opcionales en «Configurar cookies».</small>
+    {% endif %}
     <form method="post" action="{% url 'preferencia_lectura' %}" class="control-form">
         {% csrf_token %}
         <input type="hidden" name="next" value="{{ request.path }}">

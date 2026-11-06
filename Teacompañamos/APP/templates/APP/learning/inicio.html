@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-tema="{% if request.COOKIES.tema == 'oscuro' %}oscuro{% else %}claro{% endif %}">
 {% load static %}
 <head>
     <meta charset="UTF-8">
@@ -7,6 +7,7 @@
     <title>Bienvenido | Teacompañamos</title>
     <link rel="stylesheet" href="{% static 'APP/admin.css' %}">
     <link rel="stylesheet" href="{% static 'APP/acceso.css' %}">
+    <link rel="stylesheet" href="{% static 'APP/tema.css' %}">
 </head>
 <body{% if lectura_ampliada %} class="reading-large"{% endif %}>
     <header style="display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
@@ -24,5 +25,6 @@
             </div>
         </section>
     </main>
+    {% include 'APP/learning/_cookies.html' %}
 </body>
 </html>

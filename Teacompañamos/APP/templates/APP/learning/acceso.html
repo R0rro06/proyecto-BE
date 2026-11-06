@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-tema="{% if request.COOKIES.tema == 'oscuro' %}oscuro{% else %}claro{% endif %}">
 {% load static %}
 <head>
     <meta charset="UTF-8">
@@ -7,6 +7,7 @@
     <title>{% if tipo == 'administrador' %}Acceso de administrador{% else %}Iniciar sesión{% endif %} | Teacompañamos</title>
     <link rel="stylesheet" href="{% static 'APP/admin.css' %}">
     <link rel="stylesheet" href="{% static 'APP/acceso.css' %}">
+    <link rel="stylesheet" href="{% static 'APP/tema.css' %}">
 </head>
 <body>
     <header>
@@ -28,5 +29,6 @@
             {% endif %}
         </section>
     </main>
+    {% include 'APP/learning/_cookies.html' %}
 </body>
 </html>

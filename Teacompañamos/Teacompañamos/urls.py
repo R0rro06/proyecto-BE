@@ -20,6 +20,8 @@ from django.urls import path
 from APP import views
 
 urlpatterns = [
+    path('preferencia-tema/', views.preferencia_tema, name='preferencia_tema'),
+    path('cookies/', views.consentimiento_cookies, name='consentimiento_cookies'),
     path('admin/', admin.site.urls),
     path('acceso/', views.acceso_estudiante, name='acceso_estudiante'),
     path('registro/', views.registro_usuario, name='registro_usuario'),
