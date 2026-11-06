@@ -21,7 +21,7 @@
     <main>
         <section class="welcome" aria-labelledby="welcome-heading">
             <h1 id="welcome-heading">¡Hola{% if estudiante %}, {{ estudiante.username }}{% endif %}!</h1>
-            <p>Explora tus módulos y avanza a tu ritmo.{% if not estudiante %} Ingresa con tu cuenta para guardar tu progreso personal.{% endif %}</p>
+            <p>Explora tus módulos y avanza a tu ritmo.</p>
         </section>
 
         <section class="summary" aria-label="Resumen de aprendizaje">
@@ -35,7 +35,7 @@
             </article>
             <article class="summary-card">
                 <strong>{% if estudiante %}{{ lecciones_completadas }}{% else %}—{% endif %}</strong>
-                <span>{% if estudiante %}lecciones completadas{% else %}ingresa para ver tu progreso{% endif %}</span>
+                <span>lecciones completadas</span>
             </article>
         </section>
 
@@ -72,11 +72,7 @@
 
         <aside class="progress-note" aria-labelledby="progress-heading">
             <h2 id="progress-heading">Tu progreso</h2>
-            {% if estudiante %}
-                <p>Has completado {{ lecciones_completadas }} de {{ total_lecciones }} lecciones. Tus intentos se guardan en tu perfil.</p>
-            {% else %}
-                <p>Puedes explorar y responder sin una cuenta. Para guardar tus intentos y continuar tu avance, <a href="{% url 'acceso_estudiante' %}">ingresa como estudiante</a>.</p>
-            {% endif %}
+            <p>Has completado {{ lecciones_completadas }} de {{ total_lecciones }} lecciones. Tus intentos se guardan en tu perfil.</p>
         </aside>
     </main>
 </body>

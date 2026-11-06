@@ -1,5 +1,6 @@
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import Permission, User
+from django.db import IntegrityError
 from django.contrib.sessions.models import Session
 from django.test import Client, TestCase
 from django.urls import reverse
@@ -38,7 +39,7 @@ class SesionesYProgresoTests(TestCase):
 
         correcto = self.ingresar()
         self.assertRedirects(correcto, reverse('dashboard'))
-        self.assertFalse(correcto.cookies['sessionid']['expires'])
+        self.assertTrue(correcto.cookies['sessionid']['expires'])
         self.assertEqual(self.client.session[STUDENT_ID_KEY], self.usuario.pk)
         self.assertTrue(Session.objects.filter(
             session_key=self.client.session.session_key,
@@ -50,14 +51,12 @@ class SesionesYProgresoTests(TestCase):
         self.assertContains(dashboard, '¡Hola, estudiante!')
         self.assertContains(dashboard, '0 de 1 lecciones')
 
-    def test_login_duplicado_ambiguo_no_inicia_sesion(self):
-        Usuario.objects.create(
-            username='ESTUDIANTE', email='otro@example.com',
-            password=make_password('Clave-Estudiante-2026!'),
-        )
-        response = self.ingresar()
-        self.assertContains(response, 'Usuario o contraseña incorrectos.')
-        self.assertNotIn(STUDENT_ID_KEY, self.client.session)
+    def test_base_de_datos_impide_usuarios_duplicados(self):
+        with self.assertRaises(IntegrityError):
+            Usuario.objects.create(
+                username='ESTUDIANTE', email='otro@example.com',
+                password=make_password('Clave-Estudiante-2026!'),
+            )
 
     def test_respuestas_guardan_intentos_y_avance_solo_para_su_perfil(self):
         self.ingresar()
@@ -102,7 +101,7 @@ class SesionesYProgresoTests(TestCase):
 
         self.assertContains(self.client.get(reverse('dashboard')), '1 de 1 lecciones')
         self.assertEqual(Perfil.objects.count(), 1)
-        self.assertEqual(Rol.objects.count(), 1)
+        self.assertEqual(Rol.objects.count(), 5)
 
         self.client.post(reverse('salir_estudiante'))
         self.ingresar()
@@ -123,7 +122,7 @@ class SesionesYProgresoTests(TestCase):
         self.usuario.password = make_password('Clave-Nueva-2026!')
         self.usuario.save(update_fields=('password',))
         response = self.client.get(reverse('dashboard'))
-        self.assertContains(response, 'Ingresa con tu cuenta')
+        self.assertRedirects(response, reverse('inicio') + '?next=%2Fdashboard%2F', fetch_redirect_response=False)
         self.assertNotIn(STUDENT_ID_KEY, self.client.session)
 
         self.usuario.password = make_password('Clave-Estudiante-2026!')
@@ -131,11 +130,12 @@ class SesionesYProgresoTests(TestCase):
         self.ingresar()
         self.assertEqual(self.client.get(reverse('salir_estudiante')).status_code, 405)
         self.assertRedirects(
-            self.client.post(reverse('salir_estudiante')), reverse('dashboard'),
+            self.client.post(reverse('salir_estudiante')), reverse('inicio'),
         )
         self.assertNotIn(STUDENT_ID_KEY, self.client.session)
 
     def test_cookie_lectura_se_aplica_y_se_borra(self):
+        self.ingresar()
         response = self.client.post(reverse('preferencia_lectura'), {
             'lectura_ampliada': '1', 'next': reverse('aprender_modulo', args=[self.modulo.pk]),
         })
@@ -160,7 +160,7 @@ class SesionesYProgresoTests(TestCase):
 
     def test_cookie_manipulada_y_csrf(self):
         self.client.cookies['lectura_ampliada'] = 'valor-no-valido'
-        self.assertNotContains(self.client.get(reverse('dashboard')), 'class="reading-large"')
+        self.assertNotContains(self.client.get(reverse('inicio')), 'class="reading-large"')
         self.assertEqual(self.client.get(reverse('preferencia_lectura')).status_code, 405)
         strict_client = Client(enforce_csrf_checks=True)
         self.assertEqual(
@@ -191,9 +191,9 @@ class PanelContentPermissionsTests(TestCase):
             content_type__app_label='APP', codename__in=('view_modulo', 'add_modulo'),
         )
         staff.user_permissions.add(*permissions)
-        self.assertEqual(self.client.get(panel).status_code, 200)
+        self.assertEqual(self.client.get(panel).status_code, 403)
         response = self.client.post(create, {
             'titulo': 'Con permiso', 'descripcion': 'Sí', 'orden': 1,
         })
-        self.assertEqual(response.status_code, 302)
-        self.assertTrue(Modulo.objects.filter(titulo='Con permiso').exists())
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(Modulo.objects.filter(titulo='Con permiso').exists())

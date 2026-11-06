@@ -7,6 +7,7 @@
 #   * Make sure each ForeignKey and OneToOneField has `on_delete` set to the desired behavior
 #   * Remove `managed = False` lines if you wish to allow Django to create, modify, and delete the table
 # Feel free to rename the models, but don't rename db_table values or field names.
+from django.conf import settings
 from django.db import models
 
 class Leccion(models.Model):
@@ -70,6 +71,7 @@ class Progreso(models.Model):
 class Rol(models.Model):
     nombre = models.CharField(max_length=100)
     descripcion = models.CharField(max_length=255, blank=True, null=True)
+    codigo = models.CharField(max_length=20, unique=True, blank=True, null=True, editable=False)
 
     class Meta:
         managed = True
@@ -77,9 +79,13 @@ class Rol(models.Model):
 
 
 class Usuario(models.Model):
-    username = models.CharField(max_length=100)
-    email = models.CharField(max_length=150)
+    username = models.CharField(max_length=100, unique=True)
+    email = models.CharField(max_length=150, unique=True, blank=True, null=True)
     password = models.CharField(max_length=255)
+    django_user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        blank=True, null=True, editable=False,
+    )
 
     def __str__(self):
         return self.username

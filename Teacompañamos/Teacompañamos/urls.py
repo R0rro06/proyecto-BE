@@ -22,10 +22,12 @@ from APP import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('acceso/', views.acceso_estudiante, name='acceso_estudiante'),
+    path('registro/', views.registro_usuario, name='registro_usuario'),
     path('salir/', views.salir_estudiante, name='salir_estudiante'),
     path('preferencia-lectura/', views.preferencia_lectura, name='preferencia_lectura'),
     # Experiencia de aprendizaje.
-    path('', views.DashboardView.as_view(), name='dashboard'),
+    path('', views.inicio, name='inicio'),
+    path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
     path('aprender/modulos/<int:pk>/', views.AprenderModuloView.as_view(), name='aprender_modulo'),
     path('aprender/lecciones/<int:pk>/', views.ResponderLeccionView.as_view(), name='responder_leccion'),
     # Panel administrativo y CRUD de módulos, lecciones y roles.

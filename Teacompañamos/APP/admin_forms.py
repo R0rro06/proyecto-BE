@@ -6,6 +6,7 @@ from .models import Usuario
 
 
 class UsuarioAdminBaseForm(forms.ModelForm):
+    username = forms.CharField(max_length=100, label='Nombre de usuario')
     email = forms.EmailField(max_length=150, label='Correo electrónico')
 
     class Meta:
@@ -21,6 +22,8 @@ class UsuarioAdminBaseForm(forms.ModelForm):
 
     def clean_username(self):
         username = self.cleaned_data['username'].strip()
+        if username.casefold() == 'admin' and not self.instance.django_user_id:
+            raise forms.ValidationError('Este nombre está reservado para la cuenta administradora.')
         usuarios = Usuario.objects.filter(username__iexact=username)
         if self.instance.pk:
             usuarios = usuarios.exclude(pk=self.instance.pk)

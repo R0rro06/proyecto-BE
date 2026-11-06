@@ -12,7 +12,7 @@ class UsuarioAdminTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.admin = User.objects.create_superuser(
-            username='administrador',
+            username='admin',
             email='admin@example.com',
             password='Clave-Admin-2026!',
         )
@@ -22,39 +22,17 @@ class UsuarioAdminTests(TestCase):
 
     def test_admin_de_django_y_usuario_del_proyecto_estan_disponibles(self):
         self.assertEqual(self.client.get(reverse('admin:index')).status_code, 200)
-        self.assertEqual(
-            self.client.get(reverse('admin:auth_user_changelist')).status_code, 200,
-        )
+        self.assertNotIn(User, admin.site._registry)
+        self.assertEqual(list(admin.site._registry), [Usuario])
         self.assertEqual(
             self.client.get(reverse('admin:APP_usuario_changelist')).status_code, 200,
         )
 
     def test_grupos_no_se_administran_ni_se_asignan_desde_usuarios(self):
-        grupo = Group.objects.create(name='Docentes')
-        usuario = User.objects.create_user(
-            username='personal', password='Clave-Personal-2026!',
-        )
+        Group.objects.create(name='Docentes')
         self.assertNotIn(Group, admin.site._registry)
         self.assertEqual(self.client.get('/admin/auth/group/').status_code, 404)
-
-        url = reverse('admin:auth_user_change', args=[usuario.pk])
-        formulario = self.client.get(url)
-        self.assertEqual(formulario.status_code, 200)
-        self.assertNotContains(formulario, 'name="groups"')
-
-        respuesta = self.client.post(url, {
-            'username': usuario.username,
-            'first_name': '',
-            'last_name': '',
-            'email': '',
-            'is_active': 'on',
-            'date_joined_0': usuario.date_joined.date().isoformat(),
-            'date_joined_1': usuario.date_joined.time().strftime('%H:%M:%S'),
-            'groups': [str(grupo.pk)],
-            '_save': 'Guardar',
-        })
-        self.assertEqual(respuesta.status_code, 302)
-        self.assertFalse(usuario.groups.exists())
+        self.assertEqual(self.client.get('/admin/auth/user/').status_code, 404)
 
     def test_usuario_anonimo_no_puede_administrar(self):
         self.client.logout()
@@ -69,7 +47,7 @@ class UsuarioAdminTests(TestCase):
         )
         self.client.force_login(personal)
         response = self.client.get(reverse('admin:APP_usuario_changelist'))
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 302)
 
     def test_crear_usuario_guarda_hash_y_no_expone_password(self):
         response = self.client.post(reverse('admin:APP_usuario_add'), {

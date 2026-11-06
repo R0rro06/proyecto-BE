@@ -1,5 +1,18 @@
 from django import forms
+from .admin_forms import UsuarioCreationAdminForm
 from .models import Leccion, Modulo, Estado, Perfil, Progreso, Rol, Usuario
+
+
+TIPOS_USUARIO = (
+    ('estudiante', 'Estudiante'),
+    ('familiar', 'Familiar'),
+    ('profesor', 'Profesor'),
+    ('otro', 'Otro'),
+)
+
+
+class RegistroUsuarioForm(UsuarioCreationAdminForm):
+    tipo = forms.ChoiceField(choices=TIPOS_USUARIO, label='Soy')
 
 
 class AccesoEstudianteForm(forms.Form):

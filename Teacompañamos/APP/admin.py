@@ -1,5 +1,4 @@
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import Group, User
 from django.utils.decorators import method_decorator
 from django.views.decorators.debug import sensitive_post_parameters
@@ -12,30 +11,23 @@ admin.site.unregister(Group)
 admin.site.unregister(User)
 
 
-@admin.register(User)
-class UsuarioDjangoAdmin(UserAdmin):
-    """Conserva la gestión de cuentas sin edición de grupos."""
-
-    fieldsets = tuple(
-        (
-            title,
-            {
-                **options,
-                'fields': tuple(field for field in options['fields'] if field != 'groups'),
-            },
-        )
-        for title, options in UserAdmin.fieldsets
-    )
-    filter_horizontal = ('user_permissions',)
-    list_filter = ('is_staff', 'is_superuser', 'is_active')
-
-
 @admin.register(Usuario)
 class UsuarioAdmin(admin.ModelAdmin):
-    list_display = ('id', 'username', 'email')
+    list_display = ('id', 'username', 'email', 'tipo_usuario')
     search_fields = ('username', 'email')
     ordering = ('username',)
     actions = None  # Evita el borrado masivo sin revisar perfiles asociados.
+
+    @admin.display(description='Tipo')
+    def tipo_usuario(self, obj):
+        perfil = obj.perfil_set.select_related('rol').order_by('pk').first()
+        return perfil.rol.nombre if perfil else 'Sin perfil'
+
+    def has_change_permission(self, request, obj=None):
+        return super().has_change_permission(request, obj) and (obj is None or not obj.django_user_id)
+
+    def has_delete_permission(self, request, obj=None):
+        return super().has_delete_permission(request, obj) and (obj is None or not obj.django_user_id)
 
     @method_decorator(sensitive_post_parameters(
         'password1', 'password2', 'new_password1', 'new_password2',

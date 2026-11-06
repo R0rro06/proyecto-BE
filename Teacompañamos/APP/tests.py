@@ -1,7 +1,8 @@
 from django.test import TestCase
 from django.urls import reverse
+from django.contrib.auth.hashers import make_password
 
-from .models import Leccion, Modulo, Progreso
+from .models import Leccion, Modulo, Progreso, Usuario
 
 
 class FlujoDeAprendizajeTests(TestCase):
@@ -17,6 +18,13 @@ class FlujoDeAprendizajeTests(TestCase):
             explicacion='La Tierra gira alrededor del Sol.',
             modulo=self.modulo,
         )
+        self.usuario = Usuario.objects.create(
+            username='alumno', email='alumno@example.com',
+            password=make_password('Clave-Alumno-2026!'),
+        )
+        self.client.post(reverse('acceso_estudiante'), {
+            'username': 'alumno', 'password': 'Clave-Alumno-2026!',
+        })
 
     def test_dashboard_enlaza_al_modulo(self):
         response = self.client.get(reverse('dashboard'))
@@ -32,7 +40,7 @@ class FlujoDeAprendizajeTests(TestCase):
         self.assertContains(response, self.leccion.pregunta)
         self.assertContains(response, reverse('responder_leccion', args=[self.leccion.pk]))
 
-    def test_respuesta_correcta_muestra_explicacion_sin_guardar_progreso(self):
+    def test_respuesta_correcta_muestra_explicacion_y_guarda_progreso(self):
         response = self.client.post(
             reverse('responder_leccion', args=[self.leccion.pk]),
             {'respuesta': '1'},
@@ -41,7 +49,7 @@ class FlujoDeAprendizajeTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, '¡Correcto!')
         self.assertContains(response, self.leccion.explicacion)
-        self.assertEqual(Progreso.objects.count(), 0)
+        self.assertEqual(Progreso.objects.count(), 1)
         self.leccion.refresh_from_db()
         self.assertEqual(self.leccion.completada, 0)
 
@@ -54,7 +62,7 @@ class FlujoDeAprendizajeTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Respuesta incorrecta')
         self.assertContains(response, 'La respuesta correcta es <strong>Verdadero.')
-        self.assertEqual(Progreso.objects.count(), 0)
+        self.assertEqual(Progreso.objects.count(), 1)
 
     def test_respuesta_ausente_muestra_error_y_no_guarda_progreso(self):
         response = self.client.post(

@@ -5,3 +5,72 @@ body > main {
 .form-card {
     margin-top: 1rem;
 }
+
+.entry-main {
+    width: min(1050px, 100% - 2rem);
+}
+
+.role-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.role-card {
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem;
+    background: #fff;
+    border: 1px solid #e5eaf2;
+    border-radius: 1.25rem;
+    box-shadow: 0 8px 24px rgb(23 43 77 / 5%);
+}
+
+.role-card h2 { margin: 0; }
+.role-card p { flex: 1; }
+.role-actions { display: flex; flex-wrap: wrap; gap: .65rem; }
+.role-actions a {
+    padding: .6rem .85rem;
+    border: 1px solid #285c48;
+    border-radius: .7rem;
+    text-decoration: none;
+    font-weight: 700;
+}
+.role-actions a:first-child { background: #285c48; color: #fff; }
+
+.form-card input, .form-card select {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-height: 2.75rem;
+    padding: .65rem .75rem;
+    border: 1px solid #b7c2d3;
+    border-radius: .65rem;
+    font: inherit;
+}
+.form-card label { display: block; margin-bottom: .35rem; font-weight: 700; }
+.errorlist { color: #a12626; }
+
+.admin-entry {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1.25rem;
+    padding: 1.25rem 1.5rem;
+    border: 1px solid #b9d8ca;
+    border-radius: 1.25rem;
+    background: #e8f5ef;
+}
+.admin-entry h2 { margin: 0; }
+.admin-entry p { margin: .5rem 0 0; }
+.admin-entry a {
+    padding: .7rem 1rem;
+    border-radius: .75rem;
+    background: #285c48;
+    color: #fff;
+    text-decoration: none;
+    font-weight: 700;
+}

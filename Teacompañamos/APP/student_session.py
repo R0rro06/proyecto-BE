@@ -2,6 +2,7 @@
 
 from django.utils.crypto import constant_time_compare, salted_hmac
 
+from .admin_account import is_primary_admin
 from .models import Usuario
 
 
@@ -21,10 +22,14 @@ def student_from_request(request):
         return None
 
     usuario = Usuario.objects.filter(pk=usuario_id).first()
-    if usuario and constant_time_compare(fingerprint, _password_fingerprint(usuario)):
+    if (usuario and constant_time_compare(fingerprint, _password_fingerprint(usuario))
+            and (not usuario.django_user_id or (
+                is_primary_admin(request.user) and request.user.pk == usuario.django_user_id
+            ))):
         return usuario
 
-    request.session.flush()
+    request.session.pop(STUDENT_ID_KEY, None)
+    request.session.pop(STUDENT_HASH_KEY, None)
     return None
 
 

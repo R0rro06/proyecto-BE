@@ -10,17 +10,20 @@
 </head>
 <body>
     <header>
-        <a href="{% url 'dashboard' %}">← Volver al inicio</a>
+        <a href="{% url 'inicio' %}">← Volver al inicio</a>
     </header>
     <main>
-        <h1>Ingresar como estudiante</h1>
+        <h1>Ingresar como {{ tipo_nombre|lower }}</h1>
         <section class="form-card">
-            <p>Usa la cuenta que creó el administrador.</p>
+            <p>Usa tu cuenta para continuar aprendiendo.</p>
             <form method="post">
                 {% csrf_token %}
+                <input type="hidden" name="tipo" value="{{ tipo }}">
+                <input type="hidden" name="next" value="{{ next }}">
                 {{ form.as_p }}
                 <button type="submit">Ingresar</button>
             </form>
+            {% if tipo != 'administrador' %}<p>¿Aún no tienes cuenta? <a href="{% url 'registro_usuario' %}?tipo={{ tipo }}{% if next %}&amp;next={{ next|urlencode }}{% endif %}">Regístrate</a></p>{% endif %}
         </section>
     </main>
 </body>

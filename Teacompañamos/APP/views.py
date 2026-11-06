@@ -1,8 +1,8 @@
 from django.contrib import messages
+from django.contrib.auth import authenticate, login
 from django.contrib.auth.hashers import check_password
-from django.contrib.auth.views import redirect_to_login
 from django.core.exceptions import PermissionDenied
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Count, Prefetch, Q
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -13,22 +13,61 @@ from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_POST
 from django.views import View
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
+from urllib.parse import urlencode
 
 from . import forms
+from .admin_account import ensure_admin_learning_user, is_primary_admin
 from .models import Leccion, Modulo, Perfil, Progreso, Rol, Usuario
 from .student_session import start_student_session, student_from_request
 
 
-def _learning_context(request):
-    user = request.user
-    permissions = ('APP.view_modulo', 'APP.view_leccion', 'APP.view_rol')
-    return {
-        'estudiante': student_from_request(request),
+def _safe_destination(request, fallback='dashboard'):
+    destination = request.POST.get('next') or request.GET.get('next', '')
+    if destination.startswith('/') and not destination.startswith('//') and url_has_allowed_host_and_scheme(
+        destination, allowed_hosts={request.get_host()}, require_https=request.is_secure(),
+    ):
+        return destination
+    return reverse(fallback)
+
+
+def _selected_type(request):
+    value = request.POST.get('tipo') or request.GET.get('tipo')
+    return value if value in dict((*forms.TIPOS_USUARIO, ('administrador', 'Administrador'))) else 'estudiante'
+
+
+def _learning_user(request):
+    if is_primary_admin(request.user):
+        usuario = student_from_request(request)
+        if usuario and usuario.django_user_id == request.user.pk:
+            return usuario
+        usuario = ensure_admin_learning_user(request.user)
+        start_student_session(request, usuario)
+        return usuario
+    return student_from_request(request)
+
+
+def inicio(request):
+    if _learning_user(request):
+        return redirect('dashboard')
+    return render(request, 'APP/learning/inicio.html', {
+        'tipos': forms.TIPOS_USUARIO,
+        'next': _safe_destination(request),
         'lectura_ampliada': request.COOKIES.get('lectura_ampliada') == '1',
-        'can_manage_content': (
-            user.is_authenticated and user.is_active and user.is_staff
-            and any(user.has_perm(permission) for permission in permissions)
-        ),
+    })
+
+
+class StudentRequiredMixin:
+    def dispatch(self, request, *args, **kwargs):
+        if _learning_user(request) is None:
+            return redirect(f"{reverse('inicio')}?{urlencode({'next': request.get_full_path()})}")
+        return super().dispatch(request, *args, **kwargs)
+
+
+def _learning_context(request):
+    return {
+        'estudiante': _learning_user(request),
+        'lectura_ampliada': request.COOKIES.get('lectura_ampliada') == '1',
+        'can_manage_content': is_primary_admin(request.user),
     }
 
 
@@ -40,40 +79,85 @@ def _student_profile(usuario):
         if perfil is not None:
             return perfil
 
-        rol = Rol.objects.filter(nombre__iexact='Estudiante').order_by('pk').first()
+        rol = Rol.objects.filter(codigo='estudiante').first()
         if rol is None:
-            rol = Rol.objects.create(nombre='Estudiante', descripcion='Acceso al aprendizaje')
+            rol = Rol.objects.filter(nombre__iexact='Estudiante').order_by('pk').first()
+        if rol is None:
+            rol = Rol.objects.create(codigo='estudiante', nombre='Estudiante', descripcion='Acceso al aprendizaje')
         return Perfil.objects.create(usuario=usuario, rol=rol)
 
 
 @sensitive_post_parameters('password')
 def acceso_estudiante(request):
-    if student_from_request(request):
+    if _learning_user(request):
         return redirect('dashboard')
 
     form = forms.AccesoEstudianteForm(
         request.POST if request.method == 'POST' else None,
     )
+    tipo = _selected_type(request)
     if request.method == 'POST' and form.is_valid():
         username = form.cleaned_data['username'].strip()
+        if tipo == 'administrador':
+            admin_user = authenticate(request, username=username, password=form.cleaned_data['password'])
+            if admin_user is not None and is_primary_admin(admin_user):
+                login(request, admin_user)
+                usuario_admin = ensure_admin_learning_user(admin_user)
+                start_student_session(request, usuario_admin)
+                return redirect(_safe_destination(request))
+            form.add_error(None, 'Usuario o contraseña incorrectos.')
+            return render(request, 'APP/learning/acceso.html', {
+                'form': form, 'tipo': tipo, 'tipo_nombre': 'Administrador',
+                'next': _safe_destination(request),
+            })
         try:
-            usuario = Usuario.objects.get(username__iexact=username)
+            usuario = Usuario.objects.get(username__iexact=username, django_user__isnull=True)
         except (Usuario.DoesNotExist, Usuario.MultipleObjectsReturned):
             usuario = None
 
         if usuario is not None and check_password(form.cleaned_data['password'], usuario.password):
-            _student_profile(usuario)
-            start_student_session(request, usuario)
-            return redirect('dashboard')
+            perfil = _student_profile(usuario)
+            if perfil.rol.codigo == tipo:
+                start_student_session(request, usuario)
+                return redirect(_safe_destination(request))
         form.add_error(None, 'Usuario o contraseña incorrectos.')
 
-    return render(request, 'APP/learning/acceso.html', {'form': form})
+    return render(request, 'APP/learning/acceso.html', {
+        'form': form, 'tipo': tipo,
+        'tipo_nombre': dict((*forms.TIPOS_USUARIO, ('administrador', 'Administrador')))[tipo],
+        'next': _safe_destination(request),
+    })
+
+
+@sensitive_post_parameters('password1', 'password2')
+def registro_usuario(request):
+    if _learning_user(request):
+        return redirect('dashboard')
+    tipo = _selected_type(request)
+    if tipo == 'administrador':
+        tipo = 'estudiante'
+    form = forms.RegistroUsuarioForm(request.POST if request.method == 'POST' else None,
+                                     initial={'tipo': tipo})
+    if request.method == 'POST' and form.is_valid():
+        try:
+            with transaction.atomic():
+                rol = Rol.objects.get(codigo=form.cleaned_data['tipo'])
+                usuario = form.save()
+                Perfil.objects.create(usuario=usuario, rol=rol)
+        except IntegrityError:
+            form.add_error(None, 'El usuario o correo ya está registrado. Revisa los datos.')
+        else:
+            start_student_session(request, usuario)
+            return redirect(_safe_destination(request))
+    return render(request, 'APP/learning/registro.html', {
+        'form': form, 'tipo': tipo, 'next': _safe_destination(request),
+    })
 
 
 @require_POST
 def salir_estudiante(request):
     request.session.flush()
-    return redirect('dashboard')
+    return redirect('inicio')
 
 
 @require_POST
@@ -101,9 +185,9 @@ class ContentAdminMixin:
     def dispatch(self, request, *args, **kwargs):
         user = request.user
         if not user.is_authenticated:
-            return redirect_to_login(request.get_full_path(), reverse('admin:login'))
+            return redirect(f"{reverse('acceso_estudiante')}?{urlencode({'tipo': 'administrador', 'next': request.get_full_path()})}")
         if not (
-            user.is_active and user.is_staff and user.has_perm(self.permission_required)
+            is_primary_admin(user) and user.has_perm(self.permission_required)
         ):
             raise PermissionDenied
         return super().dispatch(request, *args, **kwargs)
@@ -121,7 +205,7 @@ class PanelAdminView(ContentAdminMixin, TemplateView):
         return super().dispatch(request, *args, **kwargs)
 
 
-class DashboardView(TemplateView):
+class DashboardView(StudentRequiredMixin, TemplateView):
     """Muestra el catálogo y el avance individual cuando hay una sesión válida."""
 
     template_name = 'APP/learning/dashboard.html'
@@ -150,7 +234,7 @@ class DashboardView(TemplateView):
         return context
 
 
-class AprenderModuloView(TemplateView):
+class AprenderModuloView(StudentRequiredMixin, TemplateView):
     """Carga un módulo y sus lecciones para la página de aprendizaje."""
 
     template_name = 'APP/learning/modulo.html'
@@ -171,7 +255,7 @@ class AprenderModuloView(TemplateView):
         return context
 
 
-class ResponderLeccionView(View):
+class ResponderLeccionView(StudentRequiredMixin, View):
     template_name = 'APP/learning/leccion.html'
 
     def get_leccion(self, pk):
@@ -376,7 +460,7 @@ class RolDeleteView(ContentAdminMixin, DeleteView):
     success_url = reverse_lazy('rol_list')
 
     def form_valid(self, form):
-        if self.object.perfil_set.exists():
+        if self.object.codigo or self.object.perfil_set.exists():
             # Conserva el rol mientras esté asignado a uno o más perfiles.
             messages.error(
                 self.request,

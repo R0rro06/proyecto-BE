@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+{% load static %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenido | Teacompañamos</title>
+    <link rel="stylesheet" href="{% static 'APP/admin.css' %}">
+    <link rel="stylesheet" href="{% static 'APP/acceso.css' %}">
+</head>
+<body{% if lectura_ampliada %} class="reading-large"{% endif %}>
+    <header><strong>Teacompañamos</strong></header>
+    <main class="entry-main">
+        <h1>Bienvenido a Teacompañamos</h1>
+        <p>Para comenzar, cuéntanos cómo participas.</p>
+        <div class="role-grid">
+            {% for codigo, nombre in tipos %}
+                <section class="role-card">
+                    <h2>{{ nombre }}</h2>
+                    <p>{% if codigo == 'estudiante' %}Aprende y guarda tu avance.{% elif codigo == 'familiar' %}Acompaña el aprendizaje de tu familia.{% elif codigo == 'profesor' %}Explora los recursos para enseñar.{% else %}Participa y aprende a tu ritmo.{% endif %}</p>
+                    <div class="role-actions">
+                        <a href="{% url 'acceso_estudiante' %}?tipo={{ codigo }}{% if next %}&amp;next={{ next|urlencode }}{% endif %}">Ingresar</a>
+                        <a href="{% url 'registro_usuario' %}?tipo={{ codigo }}{% if next %}&amp;next={{ next|urlencode }}{% endif %}">Crear cuenta</a>
+                    </div>
+                </section>
+            {% endfor %}
+        </div>
+        <section class="admin-entry">
+            <div>
+                <h2>Administrador</h2>
+                <p>Ingresa con la cuenta autorizada para gestionar módulos, lecciones y roles.</p>
+            </div>
+            <a href="{% url 'acceso_estudiante' %}?tipo=administrador{% if next %}&amp;next={{ next|urlencode }}{% endif %}">Ingresar como administrador</a>
+        </section>
+    </main>
+</body>
+</html>
