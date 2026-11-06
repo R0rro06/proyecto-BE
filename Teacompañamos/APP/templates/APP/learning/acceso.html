@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ingresar | Teacompañamos</title>
+    <title>{% if tipo == 'administrador' %}Acceso de administrador{% else %}Iniciar sesión{% endif %} | Teacompañamos</title>
     <link rel="stylesheet" href="{% static 'APP/admin.css' %}">
     <link rel="stylesheet" href="{% static 'APP/acceso.css' %}">
 </head>
@@ -13,9 +13,9 @@
         <a href="{% url 'inicio' %}">← Volver al inicio</a>
     </header>
     <main>
-        <h1>Ingresar como {{ tipo_nombre|lower }}</h1>
+        <h1>{% if tipo == 'administrador' %}Iniciar sesión como administrador{% else %}Iniciar sesión{% endif %}</h1>
         <section class="form-card">
-            <p>Usa tu cuenta para continuar aprendiendo.</p>
+            <p>{% if tipo == 'administrador' %}Ingresa con tu cuenta de administrador para gestionar la plataforma.{% else %}Usa tu cuenta para continuar aprendiendo.{% endif %}</p>
             <form method="post">
                 {% csrf_token %}
                 <input type="hidden" name="tipo" value="{{ tipo }}">
@@ -23,7 +23,9 @@
                 {{ form.as_p }}
                 <button type="submit">Ingresar</button>
             </form>
-            {% if tipo != 'administrador' %}<p>¿Aún no tienes cuenta? <a href="{% url 'registro_usuario' %}?tipo={{ tipo }}{% if next %}&amp;next={{ next|urlencode }}{% endif %}">Regístrate</a></p>{% endif %}
+            {% if tipo != 'administrador' %}
+                <p>¿Aún no tienes cuenta? <a href="{% url 'registro_usuario' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Regístrate</a> y elige tu rol al crearla.</p>
+            {% endif %}
         </section>
     </main>
 </body>

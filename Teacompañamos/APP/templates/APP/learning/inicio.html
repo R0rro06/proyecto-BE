@@ -9,28 +9,19 @@
     <link rel="stylesheet" href="{% static 'APP/acceso.css' %}">
 </head>
 <body{% if lectura_ampliada %} class="reading-large"{% endif %}>
-    <header><strong>Teacompañamos</strong></header>
-    <main class="entry-main">
+    <header style="display: flex; align-items: center; justify-content: space-between; gap: 1rem;">
+        <strong>Teacompañamos</strong>
+        <a href="{% url 'acceso_estudiante' %}?tipo=administrador{% if next %}&amp;next={{ next|urlencode }}{% endif %}" aria-label="Iniciar sesión como administrador" style="font-size: 0.75rem; font-weight: 700; color: #fff; background: #285c48; border: 1px solid #285c48; border-radius: 0.7rem; padding: 0.5rem 0.75rem; text-decoration: none;">Administrador</a>
+    </header>
+    <main>
         <h1>Bienvenido a Teacompañamos</h1>
-        <p>Para comenzar, cuéntanos cómo participas.</p>
-        <div class="role-grid">
-            {% for codigo, nombre in tipos %}
-                <section class="role-card">
-                    <h2>{{ nombre }}</h2>
-                    <p>{% if codigo == 'estudiante' %}Aprende y guarda tu avance.{% elif codigo == 'familiar' %}Acompaña el aprendizaje de tu familia.{% elif codigo == 'profesor' %}Explora los recursos para enseñar.{% else %}Participa y aprende a tu ritmo.{% endif %}</p>
-                    <div class="role-actions">
-                        <a href="{% url 'acceso_estudiante' %}?tipo={{ codigo }}{% if next %}&amp;next={{ next|urlencode }}{% endif %}">Ingresar</a>
-                        <a href="{% url 'registro_usuario' %}?tipo={{ codigo }}{% if next %}&amp;next={{ next|urlencode }}{% endif %}">Crear cuenta</a>
-                    </div>
-                </section>
-            {% endfor %}
-        </div>
-        <section class="admin-entry">
-            <div>
-                <h2>Administrador</h2>
-                <p>Ingresa con la cuenta autorizada para gestionar módulos, lecciones y roles.</p>
+        <section class="role-card form-card">
+            <h2>Accede a tu cuenta</h2>
+            <p>Inicia sesión para continuar. Si aún no tienes cuenta, regístrate y elige tu rol al crearla.</p>
+            <div class="role-actions">
+                <a href="{% url 'acceso_estudiante' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Iniciar sesión</a>
+                <a href="{% url 'registro_usuario' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Crear cuenta</a>
             </div>
-            <a href="{% url 'acceso_estudiante' %}?tipo=administrador{% if next %}&amp;next={{ next|urlencode }}{% endif %}">Ingresar como administrador</a>
         </section>
     </main>
 </body>
