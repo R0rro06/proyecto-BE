@@ -1,15 +1,6 @@
 <div class="learning-controls">
-    {% if request.COOKIES.consentimiento_cookies != 'aceptar' %}
-        <small>Para guardar la lectura ampliada, acepta las cookies opcionales en «Configurar cookies».</small>
-    {% endif %}
-    <form method="post" action="{% url 'preferencia_lectura' %}" class="control-form">
-        {% csrf_token %}
-        <input type="hidden" name="next" value="{{ request.path }}">
-        <input type="hidden" name="lectura_ampliada" value="{% if lectura_ampliada %}0{% else %}1{% endif %}">
-        <button type="submit" class="control-button">
-            {% if lectura_ampliada %}Lectura normal{% else %}Ampliar lectura{% endif %}
-        </button>
-    </form>
+    <button type="button" id="theme-toggle" class="control-button">{% if request.COOKIES.tema == 'oscuro' %}Modo claro{% else %}Modo oscuro{% endif %}</button>
+    <span id="theme-control-status" role="status"></span>
     {% if estudiante %}
         <span class="student-name">{{ estudiante.username }}</span>
         <form method="post" action="{% url 'salir_estudiante' %}" class="control-form">

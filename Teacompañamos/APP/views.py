@@ -1,6 +1,6 @@
 from django.contrib import messages
-from django.contrib.auth import authenticate, login
-from django.contrib.auth.hashers import check_password
+from django.contrib.auth import authenticate, get_user_model, login, logout
+from django.conf import settings
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, transaction
 from django.db.models import Count, Prefetch, Q
@@ -16,9 +16,10 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView, T
 from urllib.parse import urlencode
 
 from . import forms
+from .accounts import create_account
 from .admin_account import ensure_admin_learning_user, is_primary_admin
+from .login_throttle import attempt_key, blocked_message, clear_failures, record_failure, retry_after
 from .models import Leccion, Modulo, Perfil, Progreso, Rol, Usuario
-from .student_session import start_student_session, student_from_request
 
 
 def _safe_destination(request, fallback='dashboard'):
@@ -36,14 +37,11 @@ def _selected_type(request):
 
 
 def _learning_user(request):
+    if not request.user.is_authenticated or not request.user.is_active:
+        return None
     if is_primary_admin(request.user):
-        usuario = student_from_request(request)
-        if usuario and usuario.django_user_id == request.user.pk:
-            return usuario
-        usuario = ensure_admin_learning_user(request.user)
-        start_student_session(request, usuario)
-        return usuario
-    return student_from_request(request)
+        return ensure_admin_learning_user(request.user)
+    return Usuario.objects.filter(django_user=request.user).first()
 
 
 def inicio(request):
@@ -52,7 +50,6 @@ def inicio(request):
     return render(request, 'APP/learning/inicio.html', {
         'tipos': forms.TIPOS_USUARIO,
         'next': _safe_destination(request),
-        'lectura_ampliada': request.COOKIES.get('lectura_ampliada') == '1',
     })
 
 
@@ -66,7 +63,6 @@ class StudentRequiredMixin:
 def _learning_context(request):
     return {
         'estudiante': _learning_user(request),
-        'lectura_ampliada': request.COOKIES.get('lectura_ampliada') == '1',
         'can_manage_content': is_primary_admin(request.user),
     }
 
@@ -96,37 +92,35 @@ def acceso_estudiante(request):
         request.POST if request.method == 'POST' else None,
     )
     tipo = _selected_type(request)
+    wait_seconds = 0
     if request.method == 'POST' and form.is_valid():
-        username = form.cleaned_data['username'].strip()
-        if tipo == 'administrador':
-            admin_user = authenticate(request, username=username, password=form.cleaned_data['password'])
-            if admin_user is not None and is_primary_admin(admin_user):
-                login(request, admin_user)
-                usuario_admin = ensure_admin_learning_user(admin_user)
-                start_student_session(request, usuario_admin)
+        username = get_user_model().normalize_username(form.cleaned_data['username'].strip())
+        key = attempt_key(request, username, admin=tipo == 'administrador')
+        wait_seconds = retry_after(key)
+        if wait_seconds:
+            form.add_error(None, blocked_message(wait_seconds))
+        else:
+            account = authenticate(request, username=username, password=form.cleaned_data['password'])
+            if account is not None and (
+                (tipo == 'administrador' and is_primary_admin(account)) or
+                (tipo != 'administrador' and (
+                    is_primary_admin(account) or Usuario.objects.filter(django_user=account).exists()
+                ))
+            ):
+                clear_failures(key)
+                login(request, account)
                 return redirect(_safe_destination(request))
-            form.add_error(None, 'Usuario o contraseña incorrectos.')
-            return render(request, 'APP/learning/acceso.html', {
-                'form': form, 'tipo': tipo, 'tipo_nombre': 'Administrador',
-                'next': _safe_destination(request),
-            })
-        try:
-            usuario = Usuario.objects.get(username__iexact=username, django_user__isnull=True)
-        except (Usuario.DoesNotExist, Usuario.MultipleObjectsReturned):
-            usuario = None
+            wait_seconds = record_failure(key)
+            form.add_error(None, blocked_message(wait_seconds) if wait_seconds else 'Usuario o contraseña incorrectos.')
 
-        if usuario is not None and check_password(form.cleaned_data['password'], usuario.password):
-            perfil = _student_profile(usuario)
-            if perfil.rol.codigo == tipo:
-                start_student_session(request, usuario)
-                return redirect(_safe_destination(request))
-        form.add_error(None, 'Usuario o contraseña incorrectos.')
-
-    return render(request, 'APP/learning/acceso.html', {
+    response = render(request, 'APP/learning/acceso.html', {
         'form': form, 'tipo': tipo,
         'tipo_nombre': dict((*forms.TIPOS_USUARIO, ('administrador', 'Administrador')))[tipo],
         'next': _safe_destination(request),
-    })
+    }, status=429 if wait_seconds else 200)
+    if wait_seconds:
+        response['Retry-After'] = str(wait_seconds)
+    return response
 
 
 @sensitive_post_parameters('password1', 'password2')
@@ -142,12 +136,12 @@ def registro_usuario(request):
         try:
             with transaction.atomic():
                 rol = Rol.objects.get(codigo=form.cleaned_data['tipo'])
-                usuario = form.save()
+                usuario = create_account(form.save(commit=False), form.cleaned_data['password1'])
                 Perfil.objects.create(usuario=usuario, rol=rol)
         except IntegrityError:
             form.add_error(None, 'El usuario o correo ya está registrado. Revisa los datos.')
         else:
-            start_student_session(request, usuario)
+            login(request, usuario.django_user)
             return redirect(_safe_destination(request))
     return render(request, 'APP/learning/registro.html', {
         'form': form, 'tipo': tipo, 'next': _safe_destination(request),
@@ -156,7 +150,7 @@ def registro_usuario(request):
 
 @require_POST
 def salir_estudiante(request):
-    request.session.flush()
+    logout(request)
     return redirect('inicio')
 
 
@@ -168,10 +162,9 @@ def consentimiento_cookies(request):
     response = redirect(_safe_destination(request, fallback='inicio'))
     response.set_cookie(
         'consentimiento_cookies', choice, max_age=180 * 24 * 60 * 60,
-        httponly=True, samesite='Lax', secure=request.is_secure(),
+        httponly=True, samesite='Lax', secure=settings.SESSION_COOKIE_SECURE,
     )
     if choice == 'rechazar':
-        response.delete_cookie('lectura_ampliada', samesite='Lax')
         response.delete_cookie('tema', samesite='Lax')
     return response
 
@@ -185,28 +178,8 @@ def preferencia_tema(request):
     if request.COOKIES.get('consentimiento_cookies') == 'aceptar':
         response.set_cookie(
             'tema', tema, max_age=180 * 24 * 60 * 60,
-            httponly=True, samesite='Lax', secure=request.is_secure(),
+            httponly=True, samesite='Lax', secure=settings.SESSION_COOKIE_SECURE,
         )
-    return response
-
-
-@require_POST
-def preferencia_lectura(request):
-    response = redirect('dashboard')
-    destination = request.POST.get('next', '')
-    if url_has_allowed_host_and_scheme(
-        destination, allowed_hosts={request.get_host()}, require_https=request.is_secure(),
-    ):
-        response['Location'] = destination
-
-    if (request.POST.get('lectura_ampliada') == '1'
-            and request.COOKIES.get('consentimiento_cookies') == 'aceptar'):
-        response.set_cookie(
-            'lectura_ampliada', '1', max_age=30 * 24 * 60 * 60,
-            httponly=True, samesite='Lax', secure=request.is_secure(),
-        )
-    else:
-        response.delete_cookie('lectura_ampliada', samesite='Lax')
     return response
 
 
@@ -370,6 +343,7 @@ class CursosModuloUpdateView(ContentAdminMixin, UpdateView):
     success_url = reverse_lazy('cursos_modulo_list')
 
 class CursosModuloDeleteView(ContentAdminMixin, DeleteView):
+    http_method_names = ['get', 'post', 'head', 'options']
     permission_required = 'APP.delete_modulo'
     model = Modulo
     template_name = 'APP/admin/modulos/confirm_delete.html'
@@ -436,6 +410,7 @@ class CursosLeccionUpdateView(ContentAdminMixin, UpdateView):
     success_url = reverse_lazy('cursos_leccion_list')
 
 class CursosLeccionDeleteView(ContentAdminMixin, DeleteView):
+    http_method_names = ['get', 'post', 'head', 'options']
     permission_required = 'APP.delete_leccion'
     model = Leccion
     template_name = 'APP/admin/lecciones/confirm_delete.html'
@@ -485,6 +460,7 @@ class RolUpdateView(ContentAdminMixin, UpdateView):
 
 
 class RolDeleteView(ContentAdminMixin, DeleteView):
+    http_method_names = ['get', 'post', 'head', 'options']
     permission_required = 'APP.delete_rol'
     model = Rol
     template_name = 'APP/admin/roles/confirm_delete.html'

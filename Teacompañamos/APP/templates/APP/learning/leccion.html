@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="{% static 'APP/learning_controls.css' %}">
     <link rel="stylesheet" href="{% static 'APP/tema.css' %}">
 </head>
-<body{% if lectura_ampliada %} class="reading-large"{% endif %}>
+<body>
     <header>
         <a href="{% url 'aprender_modulo' leccion.modulo_id %}">← Volver a {{ leccion.modulo.titulo }}</a>
         {% include 'APP/learning/_controles.html' %}

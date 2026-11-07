@@ -1,79 +1,86 @@
 # TEAcompañamos
 
-## Entorno local (Windows)
+Aplicación educativa hecha con Django y MySQL/MariaDB para aprender sobre trastorno del espectro autista. Presenta módulos y lecciones con ejercicios de verdadero o falso, guarda el avance por usuario y diferencia los permisos de estudiantes y del administrador.
 
-El proyecto funciona con Python 3.12, Django 4.2 y MariaDB 10.4. Usa la base
-`bd` en `localhost:3306`, con el usuario y la contraseña definidos en
-`Teacompañamos/Teacompañamos/settings.py`. Antes de iniciar, verifica que el
-servidor MariaDB esté encendido y que la base `bd` exista.
+## Requisitos
 
-El entorno virtual `.venv` ya está creado. Para iniciar la aplicación desde la
-raíz del repositorio:
+- Python 3.12
+- MySQL o MariaDB disponible en `localhost:3306`
+- Base de datos `bd` creada previamente
+- Dependencias fijadas en `requirements.txt`
+
+El repositorio incluye `.venv` en este equipo. Para preparar un entorno virtual nuevo en PowerShell:
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+## Compatibilidad pendiente
+
+La instalación funcional verificada utiliza Django 4.2.30 y MariaDB 10.4.32. Django 4.2 ya no recibe actualizaciones de seguridad; Django 5.2 requiere MariaDB 10.5 o posterior, por lo que la actualización está bloqueada hasta elevar primero la versión del servidor de base de datos. Antes de exponer el sitio fuera del entorno local, planifica esa actualización y vuelve a ejecutar las comprobaciones de compatibilidad.
+
+La auditoría de código detectó además que el registro puede revelar si un nombre o correo ya existe. No publiques el sitio con `DJANGO_DEBUG=1`; habilita `DJANGO_DEBUG=0` y configura valores de producción. Estas tareas pendientes no quedan cubiertas solo porque las pruebas automatizadas pasen.
+
+## Configuración
+
+`Teacompañamos/Teacompañamos/settings.py` lee la configuración desde variables de entorno. No carga automáticamente un archivo `.env`. En PowerShell, define las variables antes de ejecutar Django:
+
+```powershell
+$env:DB_NAME = 'bd'
+$env:DB_USER = 'usuario_mysql'
+$env:DB_PASSWORD = 'contraseña_local'
+$env:DB_HOST = 'localhost'
+$env:DB_PORT = '3306'
+$env:DJANGO_SECRET_KEY = 'una-clave-larga-y-aleatoria'
+$env:DJANGO_DEBUG = '1'
+$env:DJANGO_ALLOWED_HOSTS = '127.0.0.1,localhost'
+```
+
+Para desarrollo local se pueden omitir las variables y se usan los valores locales definidos en settings. Para producción, al configurar `DJANGO_DEBUG=0`, settings exige una clave secreta, una lista explícita de hosts y un usuario MySQL no root con contraseña. No subas secretos al repositorio.
+
+## Ejecutar el proyecto
+
+Desde la raíz:
 
 ```powershell
 cd Teacompañamos
+..\.venv\Scripts\python.exe manage.py migrate
 ..\.venv\Scripts\python.exe manage.py runserver
 ```
 
-Abre `http://127.0.0.1:8000/` para elegir el tipo de usuario, ingresar o
-registrarte. El dashboard está en `/dashboard/` y requiere iniciar sesión.
-El panel de contenido está en `/panel_administracion/` y solo se muestra a
-la cuenta `admin` después de ingresar como administrador desde la página inicial.
+Abre `http://127.0.0.1:8000/`. La página inicial conduce a ingreso o registro. Los usuarios se clasifican como estudiante, familiar, profesor u otro al registrarse; el rol se obtiene de su perfil después de iniciar sesión. El dashboard, módulos y lecciones requieren una sesión autenticada. El panel de gestión de contenido está en `/panel_administracion/` y solo permite el acceso al superusuario principal `admin` con los permisos correspondientes.
 
-## Django Admin
-
-El administrador de Django está en `http://127.0.0.1:8000/admin/` y utiliza
-la misma base `bd`. En esta instalación la cuenta autorizada es `admin`, que
-usa su misma contraseña al ingresar desde la página inicial. En una instalación
-nueva, crea esa cuenta con una contraseña elegida por ti:
+Para dar de alta esa cuenta en una instalación nueva, usa una contraseña segura elegida por el equipo:
 
 ```powershell
-cd Teacompañamos
 ..\.venv\Scripts\python.exe manage.py createsuperuser --username admin
 ```
 
-El Admin de Django solo muestra la gestión de **APP > Usuarios**. La cuenta
-`admin` conserva su autenticación en `auth_user` y tiene un registro enlazado
-en `usuario` para aparecer también en el dashboard; ese registro no se puede
-editar ni borrar desde el Admin. Los demás usuarios se registran en la tabla
-`usuario` y no reciben permisos administrativos.
-En **APP > Usuarios**, la eliminación individual de un estudiante borra también
-sus perfiles y registros de progreso después de la confirmación del Admin.
-Los roles y las lecciones permanecen disponibles.
+El acceso a `/admin/` también está restringido a la cuenta principal `admin`. Ese apartado muestra únicamente **Usuarios, Roles y Perfiles**. En Perfiles se puede cambiar el rol de una cuenta normal; la creación y el borrado directos de perfiles están bloqueados para proteger el progreso. Los módulos y las lecciones se administran desde `/panel_administracion/`. El acceso administrativo existente en la base del proyecto debe conservarse al instalar una copia; no se documentan contraseñas aquí.
 
-## Sesiones de estudiantes y cookies
+Tras cinco accesos fallidos se bloquean los nuevos intentos durante un minuto. El acceso normal cuenta fallos por usuario e IP; los dos formularios de acceso del administrador comparten el mismo contador por IP. Los contadores se guardan en `login_attempt` dentro de MySQL y se limpian al iniciar sesión correctamente.
 
-Las cuentas creadas en `/registro/` o en **APP > Usuarios** pueden ingresar en
-`/acceso/` después de elegir Estudiante, Familiar, Profesor u Otro. La
-contraseña se comprueba contra el hash guardado en `usuario`.
-El primer acceso reutiliza un perfil existente o prepara uno con el rol
-`Estudiante` si la cuenta todavía no tiene perfil.
-El dashboard, los módulos y las lecciones requieren una sesión. Los intentos
-y las lecciones completadas se guardan en `progreso` por perfil.
+## Datos y autenticación
 
-La sesión se guarda en la tabla `django_session` de la misma base `bd`. Su
-identificador viaja en una cookie del navegador con una duración máxima de dos
-horas. El botón **Salir** cierra la sesión actual.
-La opción **Ampliar lectura** usa otra cookie durante 30 días y no contiene
-datos del usuario. El panel de contenido y sus rutas requieren la sesión
-autenticada de `admin`.
+Las cuentas usan la autenticación nativa de Django. La tabla `auth_user` conserva el hash de contraseña y los indicadores de permisos; cada cuenta de aprendizaje queda enlazada a un registro `APP.Usuario`, cuyo identificador y relaciones de perfil/progreso se conservan. La migración `0005_unify_user_auth` enlaza las cuentas anteriores y vuelve inutilizable el hash legado en `usuario.password` para evitar dos credenciales activas.
 
-Si la base no tiene aplicadas las migraciones de Django, ejecuta
-`..\.venv\Scripts\python.exe manage.py migrate` desde `Teacompañamos` antes de
-probar el acceso. Apache por sí solo no sirve este proyecto Django: para el
-entorno local usa `manage.py runserver`, salvo que hayas configurado Django en
-Apache por separado.
+Los perfiles enlazan usuarios con roles. Los intentos y las fechas de finalización se almacenan en `progreso` asociados al perfil y a la lección. Las migraciones del proyecto están en `Teacompañamos/APP/migrations/`.
 
-Para recrear el entorno en este equipo y ejecutar las pruebas:
+## Sesiones y cookies
+
+Django guarda la sesión autenticada en `django_session` (duración máxima de dos horas) y envía al navegador el identificador en una cookie `HttpOnly` y `SameSite=Lax`. El cierre de sesión elimina la sesión. El avance del dashboard se calcula para el usuario conectado.
+
+La aplicación utiliza una cookie de consentimiento durante 180 días. El aviso aparece como una tarjeta pequeña en la esquina inferior derecha y se cierra después de aceptar o rechazar; el botón «Cookies» permite volver a abrirlo y cambiar la decisión. Si el navegador borra las cookies o vence el plazo de 180 días, el aviso se muestra de nuevo. El control de modo claro/oscuro reemplaza la antigua lectura ampliada; al aceptar las cookies opcionales, el tema elegido se guarda durante 180 días. Si se rechazan, el cambio de tema solo dura mientras se permanece en la página. En conexiones HTTPS, las cookies configuradas por las vistas se marcan `Secure`.
+
+## Verificación
+
+Desde `Teacompañamos/` puedes ejecutar:
 
 ```powershell
-py -3.14 -m uv python install 3.12
-py -3.14 -m uv venv --python 3.12 --seed .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-cd Teacompañamos
-..\.venv\Scripts\python.exe manage.py migrate
+..\.venv\Scripts\python.exe manage.py check
+..\.venv\Scripts\python.exe manage.py makemigrations --check --dry-run
 ..\.venv\Scripts\python.exe manage.py test APP
 ```
 
-En un equipo con Python 3.12 registrado en el lanzador de Windows, también se
-puede crear el entorno con `py -3.12 -m venv .venv`.
+La versión final debe validarse con el resultado de estas comprobaciones después de instalar dependencias. Ejecuta `migrate` sobre una copia de producción solo después de tener un respaldo verificado. El respaldo previo de este desarrollo se creó fuera del repositorio y no debe compartirse públicamente.

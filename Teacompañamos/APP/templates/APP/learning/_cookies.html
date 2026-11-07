@@ -1,29 +1,32 @@
 {% load static %}
 <link rel="stylesheet" href="{% static 'APP/cookies.css' %}">
 <aside class="cookie-preferences" aria-label="Preferencias de cookies">
-    <form method="post" action="{% url 'preferencia_tema' %}" id="theme-form" data-save="{% if request.COOKIES.consentimiento_cookies == 'aceptar' %}true{% else %}false{% endif %}">
-        {% csrf_token %}
-        <input type="hidden" name="next" value="{{ request.get_full_path }}">
-        <label for="theme-select">Apariencia</label>
-        <select name="tema" id="theme-select">
-            <option value="claro" {% if request.COOKIES.tema != 'oscuro' %}selected{% endif %}>Modo claro</option>
-            <option value="oscuro" {% if request.COOKIES.tema == 'oscuro' %}selected{% endif %}>Modo oscuro</option>
-        </select>
-        <button type="submit">Aplicar tema</button>
-        <span id="theme-status" role="status">{% if request.COOKIES.consentimiento_cookies != 'aceptar' %}Acepta las cookies opcionales para recordar tu tema.{% endif %}</span>
-    </form>
     <details {% if request.COOKIES.consentimiento_cookies != 'aceptar' and request.COOKIES.consentimiento_cookies != 'rechazar' %}open{% endif %}>
-        <summary>Configurar cookies</summary>
-        <div class="cookie-notice">
-            <h2>Tu elección de cookies</h2>
-            <p>Usamos cookies necesarias para iniciar sesión y proteger los formularios. Si aceptas las opcionales, guardaremos tu modo claro u oscuro durante 180 días y tu preferencia de lectura durante 30 días en este navegador.</p>
-            <p>Recordaremos tu elección durante 180 días. Puedes cambiarla aquí cuando quieras.</p>
-            <form method="post" action="{% url 'consentimiento_cookies' %}">
+        <summary aria-label="Abrir o cerrar preferencias de cookies">Cookies</summary>
+        <div class="cookie-panel">
+            <h2>Cookies</h2>
+            <p>Las necesarias permiten iniciar sesión y proteger formularios. Las opcionales recuerdan el modo claro u oscuro.</p>
+            <form method="post" action="{% url 'consentimiento_cookies' %}" class="cookie-choice">
                 {% csrf_token %}
                 <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                <button type="submit" name="consentimiento" value="aceptar">Aceptar cookies opcionales</button>
-                <button type="submit" name="consentimiento" value="rechazar">Rechazar cookies opcionales</button>
+                <button type="submit" name="consentimiento" value="aceptar" aria-label="Aceptar cookies opcionales">Aceptar</button>
+                <button type="submit" name="consentimiento" value="rechazar" aria-label="Rechazar cookies opcionales">Rechazar</button>
             </form>
+            <details class="cookie-more">
+                <summary>Detalles y apariencia</summary>
+                <p>Recordamos tu elección durante 180 días. Si aceptas, el tema también se guarda 180 días. Puedes cambiar tu elección aquí.</p>
+                <form method="post" action="{% url 'preferencia_tema' %}" id="theme-form" data-save="{% if request.COOKIES.consentimiento_cookies == 'aceptar' %}true{% else %}false{% endif %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <label for="theme-select">Apariencia</label>
+                    <select name="tema" id="theme-select">
+                        <option value="claro" {% if request.COOKIES.tema != 'oscuro' %}selected{% endif %}>Modo claro</option>
+                        <option value="oscuro" {% if request.COOKIES.tema == 'oscuro' %}selected{% endif %}>Modo oscuro</option>
+                    </select>
+                    <button type="submit">Aplicar tema</button>
+                    <span id="theme-status" role="status">{% if request.COOKIES.consentimiento_cookies != 'aceptar' %}Acepta las cookies opcionales para recordar tu tema.{% endif %}</span>
+                </form>
+            </details>
         </div>
     </details>
 </aside>

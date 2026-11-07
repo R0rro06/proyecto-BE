@@ -1,3 +1,4 @@
+from django.contrib.auth import SESSION_KEY
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import Permission, User
 from django.db import IntegrityError
@@ -6,14 +7,16 @@ from django.test import Client, TestCase
 from django.urls import reverse
 
 from .models import Leccion, Modulo, Perfil, Progreso, Rol, Usuario
-from .student_session import STUDENT_ID_KEY
 
 
 class SesionesYProgresoTests(TestCase):
     def setUp(self):
+        self.account = User.objects.create_user(
+            username='estudiante', email='estudiante@example.com', password='Clave-Estudiante-2026!',
+        )
         self.usuario = Usuario.objects.create(
-            username='estudiante', email='estudiante@example.com',
-            password=make_password('Clave-Estudiante-2026!'),
+            username='estudiante', email='estudiante@example.com', password=make_password(None),
+            django_user=self.account,
         )
         self.modulo = Modulo.objects.create(
             titulo='Inicio', descripcion='Módulo inicial', orden=1,
@@ -34,13 +37,13 @@ class SesionesYProgresoTests(TestCase):
         })
         self.assertEqual(incorrecto.status_code, 200)
         self.assertContains(incorrecto, 'Usuario o contraseña incorrectos.')
-        self.assertNotIn(STUDENT_ID_KEY, self.client.session)
+        self.assertNotIn(SESSION_KEY, self.client.session)
         self.assertEqual(Perfil.objects.count(), 0)
 
         correcto = self.ingresar()
         self.assertRedirects(correcto, reverse('dashboard'))
         self.assertTrue(correcto.cookies['sessionid']['expires'])
-        self.assertEqual(self.client.session[STUDENT_ID_KEY], self.usuario.pk)
+        self.assertEqual(int(self.client.session[SESSION_KEY]), self.account.pk)
         self.assertTrue(Session.objects.filter(
             session_key=self.client.session.session_key,
         ).exists())
@@ -78,7 +81,10 @@ class SesionesYProgresoTests(TestCase):
         self.assertEqual(Progreso.objects.count(), 1)
 
         otro = Usuario.objects.create(
-            username='otro', email='otro@example.com', password=make_password('Clave-Otro-2026!'),
+            username='otro', email='otro@example.com', password=make_password(None),
+            django_user=User.objects.create_user(
+                username='otro', email='otro@example.com', password='Clave-Otro-2026!',
+            ),
         )
         self.client.post(reverse('salir_estudiante'))
         self.client.post(reverse('acceso_estudiante'), {
@@ -119,55 +125,48 @@ class SesionesYProgresoTests(TestCase):
 
     def test_cambiar_clave_invalida_sesion_y_salir_exige_post(self):
         self.ingresar()
-        self.usuario.password = make_password('Clave-Nueva-2026!')
-        self.usuario.save(update_fields=('password',))
+        self.account.set_password('Clave-Nueva-2026!')
+        self.account.save(update_fields=('password',))
         response = self.client.get(reverse('dashboard'))
         self.assertRedirects(response, reverse('inicio') + '?next=%2Fdashboard%2F', fetch_redirect_response=False)
-        self.assertNotIn(STUDENT_ID_KEY, self.client.session)
+        self.assertNotIn(SESSION_KEY, self.client.session)
 
-        self.usuario.password = make_password('Clave-Estudiante-2026!')
-        self.usuario.save(update_fields=('password',))
+        self.account.set_password('Clave-Estudiante-2026!')
+        self.account.save(update_fields=('password',))
         self.ingresar()
         self.assertEqual(self.client.get(reverse('salir_estudiante')).status_code, 405)
         self.assertRedirects(
             self.client.post(reverse('salir_estudiante')), reverse('inicio'),
         )
-        self.assertNotIn(STUDENT_ID_KEY, self.client.session)
+        self.assertNotIn(SESSION_KEY, self.client.session)
 
-    def test_cookie_lectura_se_aplica_y_se_borra(self):
+    def test_control_de_tema_reemplaza_lectura_y_se_guarda_con_consentimiento(self):
         self.ingresar()
+        dashboard = self.client.get(reverse('dashboard'))
+        self.assertContains(dashboard, 'id="theme-toggle"')
+        self.assertNotContains(dashboard, 'Ampliar lectura')
         self.client.post(reverse('consentimiento_cookies'), {'consentimiento': 'aceptar'})
-        response = self.client.post(reverse('preferencia_lectura'), {
-            'lectura_ampliada': '1', 'next': reverse('aprender_modulo', args=[self.modulo.pk]),
+        response = self.client.post(reverse('preferencia_tema'), {
+            'tema': 'oscuro', 'next': reverse('aprender_modulo', args=[self.modulo.pk]),
         })
         self.assertRedirects(
             response, reverse('aprender_modulo', args=[self.modulo.pk]),
         )
-        cookie = response.cookies['lectura_ampliada']
-        self.assertEqual(cookie.value, '1')
-        self.assertEqual(cookie['max-age'], 30 * 24 * 60 * 60)
+        cookie = response.cookies['tema']
+        self.assertEqual(cookie.value, 'oscuro')
+        self.assertEqual(cookie['max-age'], 180 * 24 * 60 * 60)
         self.assertTrue(cookie['httponly'])
         self.assertContains(
             self.client.get(reverse('aprender_modulo', args=[self.modulo.pk])),
-            'class="reading-large"',
+            'id="theme-toggle" class="control-button">Modo claro',
         )
 
-        response = self.client.post(reverse('preferencia_lectura'), {
-            'lectura_ampliada': '0', 'next': 'https://otro-sitio.example/',
-        })
-        self.assertRedirects(response, reverse('dashboard'))
-        self.assertEqual(response.cookies['lectura_ampliada']['max-age'], 0)
-        self.assertNotContains(self.client.get(reverse('dashboard')), 'class="reading-large"')
-
-    def test_cookie_manipulada_y_csrf(self):
+    def test_cookie_antigua_de_lectura_se_elimina(self):
         self.client.cookies['lectura_ampliada'] = 'valor-no-valido'
-        self.assertNotContains(self.client.get(reverse('inicio')), 'class="reading-large"')
-        self.assertEqual(self.client.get(reverse('preferencia_lectura')).status_code, 405)
-        strict_client = Client(enforce_csrf_checks=True)
-        self.assertEqual(
-            strict_client.post(reverse('preferencia_lectura'), {'lectura_ampliada': '1'}).status_code,
-            403,
-        )
+        response = self.client.get(reverse('inicio'))
+        self.assertNotContains(response, 'reading-large')
+        self.assertEqual(response.cookies['lectura_ampliada']['max-age'], 0)
+        self.assertEqual(self.client.get('/preferencia-lectura/').status_code, 404)
 
 class PanelContentPermissionsTests(TestCase):
     def test_solo_admin_autorizado_puede_ver_y_modificar_contenido(self):

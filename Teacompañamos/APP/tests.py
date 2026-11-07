@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth.hashers import make_password
+from django.contrib.auth.models import User
 
 from .models import Leccion, Modulo, Progreso, Usuario
 
@@ -18,9 +19,12 @@ class FlujoDeAprendizajeTests(TestCase):
             explicacion='La Tierra gira alrededor del Sol.',
             modulo=self.modulo,
         )
+        account = User.objects.create_user(
+            username='alumno', email='alumno@example.com', password='Clave-Alumno-2026!',
+        )
         self.usuario = Usuario.objects.create(
-            username='alumno', email='alumno@example.com',
-            password=make_password('Clave-Alumno-2026!'),
+            username='alumno', email='alumno@example.com', password=make_password(None),
+            django_user=account,
         )
         self.client.post(reverse('acceso_estudiante'), {
             'username': 'alumno', 'password': 'Clave-Alumno-2026!',

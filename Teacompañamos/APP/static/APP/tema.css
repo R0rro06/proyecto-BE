@@ -1,5 +1,15 @@
 html[data-tema="oscuro"] { color-scheme: dark; background: #111a23; color: #e4edf5; }
 html[data-tema="oscuro"] body { background: #111a23; color: #e4edf5; }
+html[data-tema="oscuro"] :is(.site-header, .landing-hero, .feature-card, .auth-main, .question, .lesson, .management-card, .welcome, .topbar, .intro) { background: #1c2936; color: #e4edf5; border-color: #4a6072; }
+html[data-tema="oscuro"] :is(.auth-aside-note, .lesson-count, .button-secondary) { background: #25394b; color: #e4edf5; border-color: #4a6072; }
+html[data-tema="oscuro"] :is(.hero-copy h1, .auth-aside h1, .feature-section h2, .feature-card h3, .auth-card h2, .brand, .module-card h3, .management-card h2) { color: #e4edf5; }
+html[data-tema="oscuro"] :is(.hero-lead, .quiet-note, .feature-card p, .auth-aside > p, .auth-card > p, .back-link, .site-header nav a, .module-card > p, .management-card p) { color: #c2d0dd; }
+html[data-tema="oscuro"] :is(.auth-card, .feature-card, .module-card, .summary-card, .progress-note) { background: #1c2936; border-color: #4a6072; }
+html[data-tema="oscuro"] .button-primary { color: #fff; background: #176b59; }
+html[data-tema="oscuro"] .button-secondary { color: #c3f0dc; }
+html[data-tema="oscuro"] .answers label { background: #25394b; border-color: #5e7485; }
+html[data-tema="oscuro"] .answers label:has(input:checked) { background: #174f43; border-color: #99e2bc; }
+html[data-tema="oscuro"] .auth-aside-note { border-left-color: #99e2bc; }
 html[data-tema="oscuro"] :is(header, section, article, .table-wrap, .cookie-preferences, .module-card, .lesson-card, .content-card, .form-card, .role-card, .danger-card) {
     background: #1c2936; color: #e4edf5; border-color: #4a6072;
 }
@@ -16,6 +26,21 @@ html[data-tema="oscuro"] :is(.summary-card, .progress-note, .empty-state, .manag
 html[data-tema="oscuro"] :is(.summary-card span, .module-card > p, .progress-note p, .management-card p) { color: #c2d0dd; }
 html[data-tema="oscuro"] :is(.summary-card strong, .lesson-count, .student-name) { color: #99e2bc; }
 #theme-form { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; margin-bottom: 1rem; }
-#theme-form :is(select, button) { font: inherit; padding: .5rem .75rem; border: 1px solid #628573; border-radius: .6rem; }
+#theme-form :is(select, button) { min-height: 2.75rem; font: inherit; padding: .5rem .75rem; border: 1px solid #628573; border-radius: .6rem; }
 #theme-form button { background: #285c48; color: #fff; cursor: pointer; }
 #theme-status { font-size: .9rem; }
+
+/* Superficies oscuras sobrias, sin degradados ni ilustraciones. */
+html[data-tema="oscuro"] :is(.landing-hero, .feature-section, .feature-card, .auth-main, .auth-aside, .welcome, .intro) { background: transparent; color: #e4edf5; border-color: #40554f; box-shadow: none; }
+html[data-tema="oscuro"] :is(.auth-card, .summary-card, .module-card, .management-card, .question, .lesson, .form-card, .table-wrap, .filter-bar, .cookie-preferences) { background: #1c2936; color: #e4edf5; border-color: #4a6072; box-shadow: none; }
+html[data-tema="oscuro"] .auth-aside-note { background: transparent; border-left-color: #99e2bc; }
+html[data-tema="oscuro"] .intro p { color: #c2d0dd; }
+html[data-tema="oscuro"] .welcome p { color: #c2d0dd; }
+html[data-tema="oscuro"] :is(.hero-copy h1, .auth-aside h1, .feature-section h2, .feature-card h3, .auth-card h2, .brand, .module-card h3, .management-card h2, .intro h1) { color: #e4edf5; }
+html[data-tema="oscuro"] :is(.hero-lead, .quiet-note, .feature-card p, .auth-aside > p, .auth-card > p, .back-link, .site-header nav a, .module-card > p, .management-card p) { color: #c2d0dd; }
+html[data-tema="oscuro"] .button-primary { color: #fff; background: #176451; border-color: #176451; }
+html[data-tema="oscuro"] .button-secondary { color: #e4edf5; background: transparent; border-color: #7890a2; }
+html[data-tema="oscuro"] :is(button, .control-button) { color: #e4edf5; background: #25394b; border-color: #7890a2; }
+html[data-tema="oscuro"] .auth-card button { color: #fff; background: #176451; border-color: #176451; }
+html[data-tema="oscuro"] #theme-form button { color: #fff; background: #176451; border-color: #176451; }
+html[data-tema="oscuro"] :is(.eyebrow, .feature-number) { color: #99e2bc; }

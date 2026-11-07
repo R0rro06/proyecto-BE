@@ -6,6 +6,18 @@ from django.urls import reverse
 
 
 class CookieConsentTests(SimpleTestCase):
+    def test_aviso_aparece_solo_hasta_elegir_y_boton_lateral_sigue_disponible(self):
+        for choice in ('aceptar', 'rechazar'):
+            with self.subTest(choice=choice):
+                client = Client()
+                initial = client.get(reverse('inicio'))
+                self.assertRegex(initial.content.decode(), r'<details\s+open>')
+                self.assertContains(initial, 'Abrir o cerrar preferencias de cookies')
+                client.post(reverse('consentimiento_cookies'), {'consentimiento': choice})
+                revisit = client.get(reverse('inicio'))
+                self.assertNotRegex(revisit.content.decode(), r'<details\s+open>')
+                self.assertContains(revisit, 'Abrir o cerrar preferencias de cookies')
+
     def test_saved_theme_is_rendered_and_ignored_without_consent(self):
         for consent in ('aceptar', 'rechazar'):
             with self.subTest(consent=consent):
@@ -57,25 +69,13 @@ class CookieConsentTests(SimpleTestCase):
 
     def test_reject_clears_optional_cookie_and_blocks_external_redirect(self):
         self.client.cookies['consentimiento_cookies'] = 'aceptar'
-        self.client.cookies['lectura_ampliada'] = '1'
+        self.client.cookies['tema'] = 'oscuro'
         response = self.client.post(reverse('consentimiento_cookies'), {
             'consentimiento': 'rechazar', 'next': 'https://example.org/',
         })
         self.assertRedirects(response, '/', fetch_redirect_response=False)
         self.assertEqual(response.cookies['consentimiento_cookies'].value, 'rechazar')
-        self.assertEqual(response.cookies['lectura_ampliada']['max-age'], 0)
-
-    def test_reading_cookie_requires_consent(self):
-        for choice in (None, 'rechazar', 'aceptar'):
-            with self.subTest(choice=choice):
-                client = Client()
-                if choice:
-                    client.cookies['consentimiento_cookies'] = choice
-                response = client.post(reverse('preferencia_lectura'), {
-                    'lectura_ampliada': '1',
-                })
-                self.assertEqual(response.cookies['lectura_ampliada']['max-age'],
-                                 30 * 24 * 60 * 60 if choice == 'aceptar' else 0)
+        self.assertEqual(response.cookies['tema']['max-age'], 0)
 
     def test_consent_requires_valid_post_and_csrf(self):
         url = reverse('consentimiento_cookies')

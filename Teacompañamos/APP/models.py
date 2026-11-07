@@ -10,6 +10,17 @@
 from django.conf import settings
 from django.db import models
 
+
+class LoginAttempt(models.Model):
+    key = models.CharField(max_length=64, primary_key=True)
+    failures = models.PositiveSmallIntegerField(default=0)
+    blocked_until = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'login_attempt'
+
+
 class Leccion(models.Model):
     id = models.BigAutoField(primary_key=True)
     pregunta = models.CharField(max_length=300)
@@ -50,9 +61,14 @@ class Perfil(models.Model):
     usuario = models.ForeignKey('Usuario', models.CASCADE)
     rol = models.ForeignKey('Rol', models.DO_NOTHING)
 
+    def __str__(self):
+        return f'{self.usuario} · {self.rol}'
+
     class Meta:
         managed = True
         db_table = 'perfil'
+        verbose_name = 'perfil'
+        verbose_name_plural = 'Perfiles'
 
 
 class Progreso(models.Model):
@@ -73,9 +89,14 @@ class Rol(models.Model):
     descripcion = models.CharField(max_length=255, blank=True, null=True)
     codigo = models.CharField(max_length=20, unique=True, blank=True, null=True, editable=False)
 
+    def __str__(self):
+        return self.nombre
+
     class Meta:
         managed = True
         db_table = 'rol'
+        verbose_name = 'rol'
+        verbose_name_plural = 'Roles'
 
 
 class Usuario(models.Model):

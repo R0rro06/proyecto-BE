@@ -1,6 +1,7 @@
 from django import forms
-from django.contrib.auth.hashers import make_password
+from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.validators import UnicodeUsernameValidator
 
 from .models import Usuario
 
@@ -8,26 +9,41 @@ from .models import Usuario
 class UsuarioAdminBaseForm(forms.ModelForm):
     username = forms.CharField(max_length=100, label='Nombre de usuario')
     email = forms.EmailField(max_length=150, label='Correo electrónico')
+    tipo = forms.ChoiceField(choices=(('estudiante', 'Estudiante'), ('familiar', 'Familiar'),
+                                       ('profesor', 'Profesor'), ('otro', 'Otro')), label='Rol')
 
     class Meta:
         model = Usuario
         fields = ('username', 'email')
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk and not self.is_bound:
+            perfil = self.instance.perfil_set.select_related('rol').order_by('pk').first()
+            if perfil and perfil.rol.codigo in dict(self.fields['tipo'].choices):
+                self.fields['tipo'].initial = perfil.rol.codigo
+
     def password_validation_user(self, cleaned_data):
         # ModelForm aún no ha copiado estos valores a self.instance en clean().
-        return Usuario(
+        return get_user_model()(
             username=cleaned_data.get('username', ''),
             email=cleaned_data.get('email', ''),
         )
 
     def clean_username(self):
-        username = self.cleaned_data['username'].strip()
+        username = get_user_model().normalize_username(self.cleaned_data['username'].strip())
+        if len(username) > 100:
+            raise forms.ValidationError('El nombre de usuario no puede superar 100 caracteres.')
+        UnicodeUsernameValidator()(username)
         if username.casefold() == 'admin' and not self.instance.django_user_id:
             raise forms.ValidationError('Este nombre está reservado para la cuenta administradora.')
         usuarios = Usuario.objects.filter(username__iexact=username)
+        cuentas = get_user_model().objects.filter(username__iexact=username)
         if self.instance.pk:
             usuarios = usuarios.exclude(pk=self.instance.pk)
-        if usuarios.exists():
+            if self.instance.django_user_id:
+                cuentas = cuentas.exclude(pk=self.instance.django_user_id)
+        if usuarios.exists() or cuentas.exists():
             raise forms.ValidationError('Ya existe un usuario con este nombre.')
         return username
 
@@ -62,13 +78,6 @@ class UsuarioCreationAdminForm(UsuarioAdminBaseForm):
                 )
         return cleaned_data
 
-    def save(self, commit=True):
-        usuario = super().save(commit=False)
-        usuario.password = make_password(self.cleaned_data['password1'])
-        if commit:
-            usuario.save()
-        return usuario
-
 
 class UsuarioChangeAdminForm(UsuarioAdminBaseForm):
     new_password1 = forms.CharField(
@@ -92,12 +101,3 @@ class UsuarioChangeAdminForm(UsuarioAdminBaseForm):
                     password1, user=self.password_validation_user(cleaned_data),
                 )
         return cleaned_data
-
-    def save(self, commit=True):
-        usuario = super().save(commit=False)
-        password = self.cleaned_data.get('new_password1')
-        if password:
-            usuario.password = make_password(password)
-        if commit:
-            usuario.save()
-        return usuario

@@ -26,7 +26,6 @@ urlpatterns = [
     path('acceso/', views.acceso_estudiante, name='acceso_estudiante'),
     path('registro/', views.registro_usuario, name='registro_usuario'),
     path('salir/', views.salir_estudiante, name='salir_estudiante'),
-    path('preferencia-lectura/', views.preferencia_lectura, name='preferencia_lectura'),
     # Experiencia de aprendizaje.
     path('', views.inicio, name='inicio'),
     path('dashboard/', views.DashboardView.as_view(), name='dashboard'),

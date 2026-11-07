@@ -42,3 +42,16 @@ a {
     border: 1px dashed #b7c2d3;
     border-radius: 1rem;
 }
+
+body { min-height: 100vh; color: #163d35; background: #f3f7f5; }
+header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; background: #fff; border-bottom-color: #dce8e3; }
+header > a { font-weight: 700; text-decoration: none; }
+main { width: min(940px, calc(100% - 2rem)); margin: clamp(1.5rem, 4vw, 3rem) auto; }
+h1 { margin-bottom: .7rem; font-size: clamp(2rem, 4vw, 3.2rem); letter-spacing: -.04em; }
+main > p { max-width: 60rem; color: #53645f; font-size: 1.08rem; line-height: 1.7; }
+main section { margin-top: 2.5rem; }
+.lesson { padding: 1.25rem; border-color: #d8e2de; border-radius: .65rem; box-shadow: none; }
+.lesson h3 { margin-bottom: .8rem; font-size: 1.15rem; }
+.lesson a { display: inline-flex; min-height: 44px; align-items: center; padding: .5rem .8rem; color: #fff; background: #125447; border-radius: .7rem; font-weight: 700; text-decoration: none; }
+.lesson a:hover { background: #176b59; }
+@media (max-width: 600px) { header { align-items: flex-start; }.lesson { padding: 1rem; } }
