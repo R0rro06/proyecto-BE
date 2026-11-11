@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es" data-tema="{% if request.COOKIES.tema == 'oscuro' %}oscuro{% else %}claro{% endif %}">
+{% load static %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if tipo == 'administrador' %}Acceso de administrador{% else %}Iniciar sesión{% endif %} | Teacompañamos</title>
+    <link rel="stylesheet" href="{% static 'APP/acceso.css' %}?v=admin-login-1">
+    <link rel="stylesheet" href="{% static 'APP/tema.css' %}">
+</head>
+<body>
+    <a class="skip-link" href="#contenido">Saltar al contenido</a>
+    <header class="site-header auth-header">
+        <a class="brand" href="{% url 'inicio' %}">TEAcompañamos</a>
+        <a class="back-link" href="{% url 'inicio' %}">← Volver al inicio</a>
+    </header>
+    <main id="contenido" class="auth-main">
+        <section class="auth-aside" aria-labelledby="auth-title">
+            <p class="eyebrow">Tu espacio de aprendizaje</p>
+            <h1 id="auth-title">{% if tipo == 'administrador' %}Acceso de administración{% else %}Qué bueno verte{% endif %}</h1>
+            <p>{% if tipo == 'administrador' %}Ingresa con tu cuenta autorizada para gestionar el contenido.{% else %}Inicia sesión para volver a tus módulos y continuar donde quedaste.{% endif %}</p>
+            <div class="auth-aside-note">{% if tipo == 'administrador' %}<strong>Acceso exclusivo</strong><span>Solo la cuenta administradora puede gestionar módulos, lecciones y roles.</span>{% else %}<strong>Con calma, a tu ritmo.</strong><span>Tu progreso y tus preferencias te acompañan en cada visita.</span>{% endif %}</div>
+        </section>
+        <section class="form-card auth-card" aria-label="Formulario de inicio de sesión">
+            <h2>{% if tipo == 'administrador' %}Iniciar sesión como administrador{% else %}Iniciar sesión{% endif %}</h2>
+            <p>{% if tipo == 'administrador' %}Usa tu cuenta de administración.{% else %}Usa tu cuenta para continuar aprendiendo.{% endif %}</p>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="tipo" value="{{ tipo }}">
+                <input type="hidden" name="next" value="{{ next }}">
+                {{ form.as_p }}
+                <button type="submit">Ingresar</button>
+            </form>
+            {% if tipo != 'administrador' %}
+                <p>¿Aún no tienes cuenta? <a href="{% url 'registro_usuario' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Regístrate</a> y elige tu rol al crearla.</p>
+                <p class="admin-login-link">¿Administras los contenidos? <a href="{% url 'acceso_estudiante' %}?tipo=administrador&amp;next={% url 'panel_administracion' %}">Acceso administrador</a></p>
+            {% else %}
+                <p><a href="{% url 'acceso_estudiante' %}">Usar el inicio de sesión general</a></p>
+            {% endif %}
+        </section>
+    </main>
+    {% include 'APP/learning/_cookies.html' %}
+</body>
+</html>

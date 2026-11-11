@@ -1,27 +1,19 @@
-"""
-URL configuration for Teacompañamos project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/4.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
+"""Rutas públicas, de aprendizaje y administración."""
 from django.contrib import admin
 from django.urls import path
 
 from APP import views
 
 urlpatterns = [
+    path('preferencia-tema/', views.preferencia_tema, name='preferencia_tema'),
+    path('cookies/', views.consentimiento_cookies, name='consentimiento_cookies'),
+    path('admin/', admin.site.urls),
+    path('acceso/', views.acceso_estudiante, name='acceso_estudiante'),
+    path('registro/', views.registro_usuario, name='registro_usuario'),
+    path('salir/', views.salir_estudiante, name='salir_estudiante'),
     # Experiencia de aprendizaje.
-    path('', views.DashboardView.as_view(), name='dashboard'),
+    path('', views.inicio, name='inicio'),
+    path('dashboard/', views.DashboardView.as_view(), name='dashboard'),
     path('aprender/modulos/<int:pk>/', views.AprenderModuloView.as_view(), name='aprender_modulo'),
     path('aprender/lecciones/<int:pk>/', views.ResponderLeccionView.as_view(), name='responder_leccion'),
     # Panel administrativo y CRUD de módulos, lecciones y roles.

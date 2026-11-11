@@ -1,0 +1,13 @@
+<div class="learning-controls">
+    <button type="button" id="theme-toggle" class="control-button">{% if request.COOKIES.tema == 'oscuro' %}Modo claro{% else %}Modo oscuro{% endif %}</button>
+    <span id="theme-control-status" role="status"></span>
+    {% if estudiante %}
+        <span class="student-name">{{ estudiante.username }}</span>
+        <form method="post" action="{% url 'salir_estudiante' %}" class="control-form">
+            {% csrf_token %}
+            <button type="submit" class="control-button">Salir</button>
+        </form>
+    {% else %}
+        <a class="control-button" href="{% url 'acceso_estudiante' %}">Ingresar</a>
+    {% endif %}
+</div>

@@ -1,66 +1,273 @@
-from functools import wraps
-
 from django.contrib import messages
-from django.contrib.auth.hashers import check_password, make_password
+from django.contrib.auth import authenticate, get_user_model, login, logout
+from django.conf import settings
+from django.core.exceptions import PermissionDenied
+from django.db import IntegrityError, transaction
 from django.db.models import Count, Prefetch, Q
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse, reverse_lazy
+from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.debug import sensitive_post_parameters
 from django.views.decorators.http import require_POST
 from django.views import View
+from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
+from urllib.parse import urlencode
 
 from . import forms
-from .models import Leccion, Modulo, Rol, Usuario
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView, TemplateView
-from django.urls import reverse_lazy
+from .accounts import create_account, ensure_admin_learning_user, is_primary_admin
+from .login_throttle import attempt_key, blocked_message, clear_failures, record_failure, retry_after
+from .models import Leccion, Modulo, Perfil, Progreso, Rol, Usuario
 
 
-class PanelAdminView(TemplateView):
+TIPOS_ACCESO = dict((*forms.TIPOS_USUARIO, ('administrador', 'Administrador')))
+COOKIE_MAX_AGE = 180 * 24 * 60 * 60
+
+
+def _safe_destination(request, fallback='dashboard'):
+    destination = request.POST.get('next') or request.GET.get('next', '')
+    if destination.startswith('/') and not destination.startswith('//') and url_has_allowed_host_and_scheme(
+        destination, allowed_hosts={request.get_host()}, require_https=request.is_secure(),
+    ):
+        return destination
+    return reverse(fallback)
+
+
+def _selected_type(request):
+    value = request.POST.get('tipo') or request.GET.get('tipo')
+    return value if value in TIPOS_ACCESO else 'estudiante'
+
+
+def _modules_with_lessons():
+    return Modulo.objects.prefetch_related(Prefetch(
+        'leccion_set',
+        queryset=Leccion.objects.order_by('id'),
+        to_attr='lecciones',
+    ))
+
+
+def _learning_user(request):
+    if not request.user.is_authenticated or not request.user.is_active:
+        return None
+    if is_primary_admin(request.user):
+        return ensure_admin_learning_user(request.user)
+    return Usuario.objects.filter(django_user=request.user).first()
+
+
+def inicio(request):
+    if _learning_user(request):
+        return redirect('dashboard')
+    return render(request, 'APP/learning/inicio.html', {
+        'tipos': forms.TIPOS_USUARIO,
+        'next': _safe_destination(request),
+    })
+
+
+class StudentRequiredMixin:
+    def dispatch(self, request, *args, **kwargs):
+        if _learning_user(request) is None:
+            return redirect(f"{reverse('inicio')}?{urlencode({'next': request.get_full_path()})}")
+        return super().dispatch(request, *args, **kwargs)
+
+
+def _learning_context(request):
+    return {
+        'estudiante': _learning_user(request),
+        'can_manage_content': is_primary_admin(request.user),
+    }
+
+
+def _student_profile(usuario):
+    """Reutiliza el perfil del usuario aunque cambie el nombre de su rol."""
+    with transaction.atomic():
+        Usuario.objects.select_for_update().get(pk=usuario.pk)
+        perfil = Perfil.objects.filter(usuario=usuario).order_by('pk').first()
+        if perfil is not None:
+            return perfil
+
+        rol = Rol.objects.filter(codigo='estudiante').first()
+        if rol is None:
+            rol = Rol.objects.filter(nombre__iexact='Estudiante').order_by('pk').first()
+        if rol is None:
+            rol = Rol.objects.create(codigo='estudiante', nombre='Estudiante', descripcion='Acceso al aprendizaje')
+        return Perfil.objects.create(usuario=usuario, rol=rol)
+
+
+@sensitive_post_parameters('password')
+def acceso_estudiante(request):
+    if _learning_user(request):
+        return redirect('dashboard')
+
+    form = forms.AccesoEstudianteForm(
+        request.POST if request.method == 'POST' else None,
+    )
+    tipo = _selected_type(request)
+    wait_seconds = 0
+    if request.method == 'POST' and form.is_valid():
+        username = get_user_model().normalize_username(form.cleaned_data['username'].strip())
+        key = attempt_key(request, username, admin=tipo == 'administrador')
+        wait_seconds = retry_after(key)
+        if wait_seconds:
+            form.add_error(None, blocked_message(wait_seconds))
+        else:
+            account = authenticate(request, username=username, password=form.cleaned_data['password'])
+            if account is not None and (
+                (tipo == 'administrador' and is_primary_admin(account)) or
+                (tipo != 'administrador' and (
+                    is_primary_admin(account) or Usuario.objects.filter(django_user=account).exists()
+                ))
+            ):
+                clear_failures(key)
+                login(request, account)
+                return redirect(_safe_destination(request))
+            wait_seconds = record_failure(key)
+            form.add_error(None, blocked_message(wait_seconds) if wait_seconds else 'Usuario o contraseña incorrectos.')
+
+    response = render(request, 'APP/learning/acceso.html', {
+        'form': form, 'tipo': tipo,
+        'tipo_nombre': TIPOS_ACCESO[tipo],
+        'next': _safe_destination(request),
+    }, status=429 if wait_seconds else 200)
+    if wait_seconds:
+        response['Retry-After'] = str(wait_seconds)
+    return response
+
+
+@sensitive_post_parameters('password1', 'password2')
+def registro_usuario(request):
+    if _learning_user(request):
+        return redirect('dashboard')
+    tipo = _selected_type(request)
+    if tipo == 'administrador':
+        tipo = 'estudiante'
+    form = forms.RegistroUsuarioForm(request.POST if request.method == 'POST' else None,
+                                     initial={'tipo': tipo})
+    if request.method == 'POST' and form.is_valid():
+        try:
+            with transaction.atomic():
+                rol = Rol.objects.get(codigo=form.cleaned_data['tipo'])
+                usuario = create_account(form.save(commit=False), form.cleaned_data['password1'])
+                Perfil.objects.create(usuario=usuario, rol=rol)
+        except IntegrityError:
+            form.add_error(None, 'El usuario o correo ya está registrado. Revisa los datos.')
+        else:
+            login(request, usuario.django_user)
+            return redirect(_safe_destination(request))
+    return render(request, 'APP/learning/registro.html', {
+        'form': form, 'tipo': tipo, 'next': _safe_destination(request),
+    })
+
+
+@require_POST
+def salir_estudiante(request):
+    logout(request)
+    return redirect('inicio')
+
+
+@require_POST
+def consentimiento_cookies(request):
+    choice = request.POST.get('consentimiento')
+    if choice not in ('aceptar', 'rechazar'):
+        return HttpResponse('Elección de cookies no válida.', status=400)
+    response = redirect(_safe_destination(request, fallback='inicio'))
+    response.set_cookie(
+        'consentimiento_cookies', choice, max_age=COOKIE_MAX_AGE,
+        httponly=True, samesite='Lax', secure=settings.SESSION_COOKIE_SECURE,
+    )
+    if choice == 'rechazar':
+        response.delete_cookie('tema', samesite='Lax')
+    return response
+
+
+@require_POST
+def preferencia_tema(request):
+    tema = request.POST.get('tema')
+    if tema not in ('claro', 'oscuro'):
+        return HttpResponse('Tema no válido.', status=400)
+    response = redirect(_safe_destination(request, fallback='inicio'))
+    if request.COOKIES.get('consentimiento_cookies') == 'aceptar':
+        response.set_cookie(
+            'tema', tema, max_age=COOKIE_MAX_AGE,
+            httponly=True, samesite='Lax', secure=settings.SESSION_COOKIE_SECURE,
+        )
+    return response
+
+
+class ContentAdminMixin:
+    permission_required = None
+
+    def dispatch(self, request, *args, **kwargs):
+        user = request.user
+        if not user.is_authenticated:
+            return redirect(f"{reverse('acceso_estudiante')}?{urlencode({'tipo': 'administrador', 'next': request.get_full_path()})}")
+        if not (
+            is_primary_admin(user) and user.has_perm(self.permission_required)
+        ):
+            raise PermissionDenied
+        return super().dispatch(request, *args, **kwargs)
+
+
+class SearchListMixin:
+    search_fields = ()
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        termino = self.request.GET.get('q', '').strip()
+        if termino:
+            search = Q()
+            for field in self.search_fields:
+                search |= Q(**{f'{field}__icontains': termino})
+            queryset = queryset.filter(search)
+        return queryset
+
+
+class PanelAdminView(ContentAdminMixin, TemplateView):
     template_name = 'APP/admin/panel_admin.html'
 
+    def dispatch(self, request, *args, **kwargs):
+        user = request.user
+        self.permission_required = next((
+            permission for permission in ('APP.view_modulo', 'APP.view_leccion', 'APP.view_rol')
+            if user.has_perm(permission)
+        ), 'APP.view_modulo')
+        return super().dispatch(request, *args, **kwargs)
 
-class DashboardView(TemplateView):
-    """Muestra los módulos y lecciones disponibles, sin progreso personal."""
+
+class DashboardView(StudentRequiredMixin, TemplateView):
+    """Muestra el catálogo y el avance individual cuando hay una sesión válida."""
 
     template_name = 'APP/learning/dashboard.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        modulos = list(
-            Modulo.objects.order_by('orden').prefetch_related(
-                Prefetch(
-                    'leccion_set',
-                    queryset=Leccion.objects.order_by('id'),
-                    to_attr='lecciones',
-                )
-            )
-        )
+        context.update(_learning_context(self.request))
+        modulos = list(_modules_with_lessons().order_by('orden'))
         context['modulos'] = modulos
         context['total_modulos'] = len(modulos)
         context['total_lecciones'] = sum(len(modulo.lecciones) for modulo in modulos)
+        if context['estudiante']:
+            perfil = _student_profile(context['estudiante'])
+            context['lecciones_completadas'] = (
+                Progreso.objects.filter(perfil=perfil, fecha_completada__isnull=False)
+                .values('leccion_id').distinct().count()
+            )
         return context
 
 
-class AprenderModuloView(TemplateView):
+class AprenderModuloView(StudentRequiredMixin, TemplateView):
     """Carga un módulo y sus lecciones para la página de aprendizaje."""
 
     template_name = 'APP/learning/modulo.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['modulo'] = get_object_or_404(
-            Modulo.objects.prefetch_related(
-                Prefetch(
-                    'leccion_set',
-                    queryset=Leccion.objects.order_by('id'),
-                    to_attr='lecciones',
-                )
-            ),
-            pk=kwargs['pk'],
-        )
+        context.update(_learning_context(self.request))
+        context['modulo'] = get_object_or_404(_modules_with_lessons(), pk=kwargs['pk'])
         return context
 
 
-class ResponderLeccionView(View):
+class ResponderLeccionView(StudentRequiredMixin, View):
     template_name = 'APP/learning/leccion.html'
 
     def get_leccion(self, pk):
@@ -71,66 +278,76 @@ class ResponderLeccionView(View):
 
     def get(self, request: HttpRequest, pk: int) -> HttpResponse:
         leccion = self.get_leccion(pk)
+        context = _learning_context(request)
+        context.update({'leccion': leccion, 'form': forms.RespuestaLeccionForm()})
         return render(
-            request,
-            self.template_name,
-            {'leccion': leccion, 'form': forms.RespuestaLeccionForm()},
+            request, self.template_name, context,
         )
 
     def post(self, request: HttpRequest, pk: int) -> HttpResponse:
         leccion = self.get_leccion(pk)
         form = forms.RespuestaLeccionForm(request.POST)
-        context = {'leccion': leccion, 'form': form}
+        context = _learning_context(request)
+        context.update({'leccion': leccion, 'form': form})
 
         if form.is_valid():
-            # Solo evalúa la respuesta; no registra intentos ni progreso.
             context['respuesta_enviada'] = True
             context['es_correcta'] = (
                 form.cleaned_data['respuesta'] == bool(leccion.es_verdad)
             )
+            if context['estudiante']:
+                perfil = _student_profile(context['estudiante'])
+                with transaction.atomic():
+                    Perfil.objects.select_for_update().get(pk=perfil.pk)
+                    progreso = Progreso.objects.filter(
+                        perfil=perfil, leccion=leccion,
+                    ).order_by('pk').first()
+                    if progreso is None:
+                        progreso = Progreso(perfil=perfil, leccion=leccion, intentos=0)
+                    progreso.intentos += 1
+                    if context['es_correcta'] and progreso.fecha_completada is None:
+                        progreso.fecha_completada = timezone.now()
+                    progreso.save()
         else:
             return render(request, self.template_name, context, status=400)
 
         return render(request, self.template_name, context)
 
 
-class CursosModuloListView(ListView):
+class ModuloAdminMixin(ContentAdminMixin):
     model = Modulo
+    success_url = reverse_lazy('cursos_modulo_list')
+
+
+class ModuloFormMixin(ModuloAdminMixin):
+    form_class = forms.ModuloForm
+    template_name = 'APP/admin/modulos/form.html'
+
+
+class CursosModuloListView(ModuloAdminMixin, SearchListMixin, ListView):
+    permission_required = 'APP.view_modulo'
     template_name = 'APP/admin/modulos/list.html'
     context_object_name = 'modulos'
+    search_fields = ('titulo', 'descripcion')
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        termino = self.request.GET.get('q', '').strip()
         orden = self.request.GET.get('orden', '').strip()
-
-        # Combina la búsqueda por texto con el filtro de orden, si se enviaron.
-        if termino:
-            queryset = queryset.filter(
-                Q(titulo__icontains=termino) | Q(descripcion__icontains=termino)
-            )
         if orden.isdecimal():
             queryset = queryset.filter(orden=int(orden))
-
         return queryset.order_by('orden')
 
 
-class CursosModuloCreateView(CreateView):
-    model = Modulo
-    form_class = forms.ModuloForm
-    template_name = 'APP/admin/modulos/form.html'
-    success_url = reverse_lazy('cursos_modulo_list')
+class CursosModuloCreateView(ModuloFormMixin, CreateView):
+    permission_required = 'APP.add_modulo'
 
-class CursosModuloUpdateView(UpdateView):
-    model = Modulo
-    form_class = forms.ModuloForm
-    template_name = 'APP/admin/modulos/form.html'
-    success_url = reverse_lazy('cursos_modulo_list')
+class CursosModuloUpdateView(ModuloFormMixin, UpdateView):
+    permission_required = 'APP.change_modulo'
 
-class CursosModuloDeleteView(DeleteView):
-    model = Modulo
+class CursosModuloDeleteView(ModuloAdminMixin, DeleteView):
+    http_method_names = ['get', 'post', 'head', 'options']
+    permission_required = 'APP.delete_modulo'
     template_name = 'APP/admin/modulos/confirm_delete.html'
-    success_url = reverse_lazy('cursos_modulo_list')
 
     def form_valid(self, form):
         if self.object.leccion_set.exists():
@@ -148,27 +365,30 @@ class CursosModuloDeleteView(DeleteView):
 
 
 
-class CursosLeccionListView(ListView):
+class LeccionAdminMixin(ContentAdminMixin):
     model = Leccion
+    success_url = reverse_lazy('cursos_leccion_list')
+
+
+class LeccionFormMixin(LeccionAdminMixin):
+    form_class = forms.LeccionForm
+    template_name = 'APP/admin/lecciones/form.html'
+
+
+class CursosLeccionListView(LeccionAdminMixin, SearchListMixin, ListView):
+    permission_required = 'APP.view_leccion'
     template_name = 'APP/admin/lecciones/list.html'
     context_object_name = 'lecciones'
+    search_fields = ('pregunta', 'explicacion')
 
     def get_queryset(self):
         queryset = super().get_queryset().select_related('modulo')
-        termino = self.request.GET.get('q', '').strip()
         modulo_id = self.request.GET.get('modulo', '').strip()
         respuesta = self.request.GET.get('respuesta', '').strip()
-
-        # Los filtros de texto, módulo y respuesta se pueden combinar.
-        if termino:
-            queryset = queryset.filter(
-                Q(pregunta__icontains=termino) | Q(explicacion__icontains=termino)
-            )
         if modulo_id.isdecimal():
             queryset = queryset.filter(modulo_id=int(modulo_id))
         if respuesta in {'0', '1'}:
             queryset = queryset.filter(es_verdad=int(respuesta))
-
         return queryset.order_by('modulo__orden', 'id')
 
     def get_context_data(self, **kwargs):
@@ -177,22 +397,16 @@ class CursosLeccionListView(ListView):
         return context
 
 
-class CursosLeccionCreateView(CreateView):
-    model = Leccion
-    form_class = forms.LeccionForm
-    template_name = 'APP/admin/lecciones/form.html'
-    success_url = reverse_lazy('cursos_leccion_list')
+class CursosLeccionCreateView(LeccionFormMixin, CreateView):
+    permission_required = 'APP.add_leccion'
 
-class CursosLeccionUpdateView(UpdateView):
-    model = Leccion
-    form_class = forms.LeccionForm
-    template_name = 'APP/admin/lecciones/form.html'
-    success_url = reverse_lazy('cursos_leccion_list')
+class CursosLeccionUpdateView(LeccionFormMixin, UpdateView):
+    permission_required = 'APP.change_leccion'
 
-class CursosLeccionDeleteView(DeleteView):
-    model = Leccion
+class CursosLeccionDeleteView(LeccionAdminMixin, DeleteView):
+    http_method_names = ['get', 'post', 'head', 'options']
+    permission_required = 'APP.delete_leccion'
     template_name = 'APP/admin/lecciones/confirm_delete.html'
-    success_url = reverse_lazy('cursos_leccion_list')
 
     def form_valid(self, form):
         if self.object.progreso_set.exists():
@@ -205,42 +419,41 @@ class CursosLeccionDeleteView(DeleteView):
         return super().form_valid(form)
 
 
-class RolListView(ListView):
+class RolAdminMixin(ContentAdminMixin):
     model = Rol
+    success_url = reverse_lazy('rol_list')
+
+
+class RolFormMixin(RolAdminMixin):
+    form_class = forms.RolForm
+    template_name = 'APP/admin/roles/form.html'
+
+
+class RolListView(RolAdminMixin, SearchListMixin, ListView):
+    permission_required = 'APP.view_rol'
     template_name = 'APP/admin/roles/list.html'
     context_object_name = 'roles'
+    search_fields = ('nombre', 'descripcion')
 
     def get_queryset(self):
-        queryset = super().get_queryset()
-        termino = self.request.GET.get('q', '').strip()
-        if termino:
-            queryset = queryset.filter(
-                Q(nombre__icontains=termino) | Q(descripcion__icontains=termino)
-            )
-        return queryset.annotate(perfiles_count=Count('perfil')).order_by('nombre')
+        return super().get_queryset().annotate(perfiles_count=Count('perfil')).order_by('nombre')
 
 
-class RolCreateView(CreateView):
-    model = Rol
-    form_class = forms.RolForm
-    template_name = 'APP/admin/roles/form.html'
-    success_url = reverse_lazy('rol_list')
+class RolCreateView(RolFormMixin, CreateView):
+    permission_required = 'APP.add_rol'
 
 
-class RolUpdateView(UpdateView):
-    model = Rol
-    form_class = forms.RolForm
-    template_name = 'APP/admin/roles/form.html'
-    success_url = reverse_lazy('rol_list')
+class RolUpdateView(RolFormMixin, UpdateView):
+    permission_required = 'APP.change_rol'
 
 
-class RolDeleteView(DeleteView):
-    model = Rol
+class RolDeleteView(RolAdminMixin, DeleteView):
+    http_method_names = ['get', 'post', 'head', 'options']
+    permission_required = 'APP.delete_rol'
     template_name = 'APP/admin/roles/confirm_delete.html'
-    success_url = reverse_lazy('rol_list')
 
     def form_valid(self, form):
-        if self.object.perfil_set.exists():
+        if self.object.codigo or self.object.perfil_set.exists():
             # Conserva el rol mientras esté asignado a uno o más perfiles.
             messages.error(
                 self.request,
@@ -248,4 +461,3 @@ class RolDeleteView(DeleteView):
             )
             return redirect('rol_list')
         return super().form_valid(form)
-    
