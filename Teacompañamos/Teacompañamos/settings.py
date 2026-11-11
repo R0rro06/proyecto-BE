@@ -44,8 +44,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'APP.request_limits.FormBodyLimitMiddleware',
-    'APP.cookie_consent.CookieConsentMiddleware',
+    'APP.middleware.FormBodyLimitMiddleware',
+    'APP.middleware.CookieConsentMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',

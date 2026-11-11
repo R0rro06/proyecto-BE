@@ -4,7 +4,7 @@ from django.db import transaction
 from django.utils.decorators import method_decorator
 from django.views.decorators.debug import sensitive_post_parameters
 
-from .admin_forms import UsuarioChangeAdminForm, UsuarioCreationAdminForm
+from .forms import UsuarioChangeAdminForm, UsuarioCreationAdminForm
 from .accounts import create_account, delete_account, update_account
 from .models import Perfil, Progreso, Rol, Usuario
 

@@ -2,6 +2,24 @@
 
 Aplicación educativa hecha con Django y MySQL/MariaDB para aprender sobre trastorno del espectro autista. Presenta módulos y lecciones con ejercicios de verdadero o falso, guarda el avance por usuario y diferencia los permisos de estudiantes y del administrador.
 
+## Estructura de la aplicación
+
+Los archivos principales de `Teacompañamos/APP/` están agrupados por función:
+
+| Ubicación | Responsabilidad |
+| --- | --- |
+| `models.py` | Tablas y relaciones del proyecto. |
+| `views.py` | Páginas y acciones HTTP. |
+| `forms.py` | Formularios del sitio y de Django Admin. |
+| `admin.py` | Usuarios, roles y perfiles en Django Admin. |
+| `accounts.py` | Vínculo entre cuentas de Django y perfiles de aprendizaje. |
+| `login_throttle.py` | Límite de intentos de inicio de sesión. |
+| `middleware.py` | Tamaño máximo de formularios y consentimiento de cookies. |
+| `templates/` y `static/` | HTML, CSS y JavaScript. |
+| `migrations/` | Historial de cambios de la base de datos. |
+
+`apps.py` y `__init__.py` son archivos convencionales de Django y Python. La reorganización no cambia las rutas, las tablas ni las funciones visibles del sitio.
+
 ## Requisitos
 
 - Python 3.12
@@ -20,7 +38,7 @@ py -3.12 -m venv .venv
 
 La instalación funcional verificada utiliza Django 4.2.30 y MariaDB 10.4.32. Django 4.2 ya no recibe actualizaciones de seguridad; Django 5.2 requiere MariaDB 10.5 o posterior, por lo que la actualización está bloqueada hasta elevar primero la versión del servidor de base de datos. Antes de exponer el sitio fuera del entorno local, planifica esa actualización y vuelve a ejecutar las comprobaciones de compatibilidad.
 
-La auditoría de código detectó además que el registro puede revelar si un nombre o correo ya existe. No publiques el sitio con `DJANGO_DEBUG=1`; habilita `DJANGO_DEBUG=0` y configura valores de producción. Estas tareas pendientes no quedan cubiertas solo porque las pruebas automatizadas pasen.
+La auditoría de código detectó además que el registro puede revelar si un nombre o correo ya existe. No publiques el sitio con `DJANGO_DEBUG=1`; habilita `DJANGO_DEBUG=0` y configura valores de producción. El proyecto ya no incluye pruebas automatizadas; los cambios futuros requieren comprobación manual de los flujos de acceso, permisos y aprendizaje.
 
 ## Configuración
 
@@ -80,7 +98,6 @@ Desde `Teacompañamos/` puedes ejecutar:
 ```powershell
 ..\.venv\Scripts\python.exe manage.py check
 ..\.venv\Scripts\python.exe manage.py makemigrations --check --dry-run
-..\.venv\Scripts\python.exe manage.py test APP
 ```
 
-La versión final debe validarse con el resultado de estas comprobaciones después de instalar dependencias. Ejecuta `migrate` sobre una copia de producción solo después de tener un respaldo verificado. El respaldo previo de este desarrollo se creó fuera del repositorio y no debe compartirse públicamente.
+Comprueba manualmente el registro, inicio y cierre de sesión, permisos del administrador, cookies y avance de lecciones después de cada cambio. Ejecuta `migrate` sobre una copia de producción solo después de tener un respaldo verificado. El respaldo previo de este desarrollo se creó fuera del repositorio y no debe compartirse públicamente.

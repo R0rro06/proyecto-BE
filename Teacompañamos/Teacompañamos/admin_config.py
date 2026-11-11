@@ -45,11 +45,9 @@ class ProjectAdminSite(AdminSite):
         return response
 
     def has_permission(self, request):
-        user = request.user
-        return (
-            user.is_authenticated and user.is_active and user.is_staff
-            and user.is_superuser and user.username == 'admin'
-        )
+        from APP.accounts import is_primary_admin
+
+        return is_primary_admin(request.user)
 
 
 class ProjectAdminConfig(AdminConfig):
